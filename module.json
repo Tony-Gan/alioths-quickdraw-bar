@@ -48,6 +48,6 @@
     "templates/partials/components/icon-toggle-button.hbs"
   ],
   "url": "https://github.com/Tony-Gan/alioths-quickdraw-bar",
-  "manifest": "https://github.com/Tony-Gan/alioths-quickdraw-bar/releases/latest/download/module.json",
+  "manifest": "https://github.com/Tony-Gan/alioths-quickdraw-bar/releases/download/0.8.3/module.json",
   "download": "https://github.com/Tony-Gan/alioths-quickdraw-bar/releases/download/0.8.3/module.zip"
 }
