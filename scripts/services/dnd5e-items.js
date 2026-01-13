@@ -7,7 +7,9 @@ const TYPE_TITLES = {
   tool: "工具",
   loot: "杂项",
   backpack: "背包",
-  container: "容器"
+  container: "容器",
+  background: "背景",
+  race: "种族"
 };
 
 export function getActorOwnedItemDocuments(actor) {

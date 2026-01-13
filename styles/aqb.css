@@ -16,6 +16,8 @@
   --aqb-spacing-lg: 8px;
   --aqb-btn-height: 24px;
   --aqb-font-size: 12px;
+  --aqb-bg-toggle-on: rgba(0, 140, 255, 0.18);
+  --aqb-border-toggle-on: var(--color-border-highlight, var(--aqb-border-main));
 }
 
 @media (prefers-color-scheme: dark) {
@@ -28,6 +30,7 @@
     --aqb-bg-subtle: rgba(255, 255, 255, 0.03);
     --aqb-border-main: var(--color-border-dark-primary, #444);
     --aqb-border-subtle: var(--color-border-dark-secondary, #333);
+    --aqb-bg-toggle-on: rgba(0, 140, 255, 0.28);
   }
 }
 
@@ -170,6 +173,14 @@
   align-content: start;
 }
 
+.aqb-grid-content.aqb-grid-content-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-start;
+  align-content: flex-start;
+}
+
 /* 类型2：技能堆叠列 (变宽) */
 .aqb-col-skills-stack {
   flex: 0 1 auto;
@@ -273,8 +284,9 @@
 }
 
 .aqb-app .aqb-icon-toggle-btn.is-on {
-  background: var(--aqb-bg-panel);
-  border-color: var(--aqb-border-main);
+  background: var(--aqb-bg-toggle-on);
+  border-color: var(--aqb-border-toggle-on);
+  box-shadow: 0 0 0 1px var(--aqb-border-toggle-on) inset;
 }
 
 .aqb-app .aqb-icon-toggle-btn .aqb-item-icon-wrap {
@@ -363,6 +375,52 @@
   white-space: nowrap;
 }
 
+/* --- Item Popover (右键浮窗) --- */
+.aqb-item-popover {
+  position: fixed;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  min-width: 140px;
+  border: 1px solid var(--aqb-border-main);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+}
+
+/* Dark mode: keep the original panel background */
+.theme-dark .aqb-item-popover,
+body.theme-dark .aqb-item-popover {
+  background: var(--aqb-bg-panel);
+}
+
+@media (prefers-color-scheme: dark) {
+  .aqb-item-popover {
+    background: var(--aqb-bg-panel);
+  }
+}
+
+.aqb-item-popover-btn {
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+  height: var(--aqb-btn-height);
+  border: 1px solid transparent;
+  background: var(--aqb-bg-element);
+  border-radius: 4px;
+  font-size: var(--aqb-font-size);
+  padding: 0 8px;
+  cursor: pointer;
+  color: var(--aqb-text-primary);
+  justify-content: flex-start;
+}
+
+.aqb-item-popover-btn:hover {
+  background: var(--aqb-bg-hover);
+  border-color: var(--aqb-border-main);
+}
 
 /* ========================================= */
 /* 6.1 所持物页样式 (Items) */
@@ -512,7 +570,8 @@
   gap: 10px;
 }
 
-.aqb-spells-unprepared {
+.aqb-spells-unprepared,
+.aqb-spells-hide {
   display: flex;
   align-items: center;
   gap: 4px;

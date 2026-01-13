@@ -30,7 +30,7 @@
       {{#if hasFeatureItems}}
         <div class="aqb-feature-list">
           {{#each featureItems}}
-            {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="item" key=id icon=icon label=name info=usesText }}
+            {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="item" key=id icon=icon label=name info=usesText disabled=disabled }}
           {{/each}}
         </div>
       {{else}}

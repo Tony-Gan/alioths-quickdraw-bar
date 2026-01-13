@@ -33,7 +33,7 @@
             <h1>{{title}}</h1>
             <div class="aqb-item-list">
               {{#each items}}
-                {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="item" key=id icon=icon label=name info=usesText}}
+                {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="item" key=id icon=icon label=name info=usesText disabled=disabled}}
               {{/each}}
             </div>
           </section>

@@ -56,9 +56,12 @@
 
   <section class="aqb-checks-col aqb-col-grid-2 aqb-col-fill">
     <h2>其他检定</h2>
-    <div class="aqb-grid-content">
+    <div class="aqb-grid-content aqb-grid-content-wrap"> <!-- [MODIFIED] -->
       {{> "modules/alioths-quickdraw-bar/templates/partials/components/split-button.hbs" roll="initiative" icon=genericIcon label="先攻" info=initiativeMod disabled=buttonsDisabled}}
       {{> "modules/alioths-quickdraw-bar/templates/partials/components/split-button.hbs" roll="death-save" icon=genericIcon label="死豁" info=deathSaveMod disabled=buttonsDisabled}}
+      {{> "modules/alioths-quickdraw-bar/templates/partials/components/split-button.hbs" roll="hit-dice" icon=genericIcon label="生命骰" info="" disabled=buttonsDisabled}}
+      {{> "modules/alioths-quickdraw-bar/templates/partials/components/split-button.hbs" roll="short-rest" icon=genericIcon label="短休" info="" disabled=buttonsDisabled}}
+      {{> "modules/alioths-quickdraw-bar/templates/partials/components/split-button.hbs" roll="long-rest" icon=genericIcon label="长休" info="" disabled=buttonsDisabled}}
     </div>
   </section>
 </div>

@@ -37,8 +37,12 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     this._warnedNoToken = false;
     this._didAutoPosition = false;
     this._rerenderTimer = null;
+    this._itemPopoverEl = null;
+    this._itemPopoverDismissHandler = null;
+    this._itemPopoverEscHandler = null;
     
     this._spellsUnpreparedMode = game.settings.get(MODULE_ID, SETTINGS.SPELLS_UNPREPARED_MODE) || "disable";
+    this._spellsHideMode = "hide";
     this._itemsSortMode = "type-weapon";
     this._itemsHideMode = "hide";
 
@@ -65,6 +69,7 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       this._activeTab,
       this._spellsSortMode,
       this._spellsUnpreparedMode,
+      this._spellsHideMode,
       this._itemsSortMode,
       this._itemsHideMode,
       this._featuresPassiveMode,
@@ -105,30 +110,7 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
   async _onRender(context, options) {
     await super._onRender(context, options);
-
-    this._aqbItemContextMenu?.close({ animate: false }).catch?.(() => {});
-    this._aqbItemContextMenu = new ContextMenu(this.element, ".aqb-item-btn", [
-      {
-        name: "重命名",
-        icon: '<i class="fa-solid fa-pen-to-square"></i>',
-        callback: (target) => {
-          const el = target instanceof HTMLElement ? target : target?.[0];
-          const key = el?.dataset?.aqbKey;
-          const label = el?.querySelector?.(".aqb-item-main")?.textContent ?? "";
-          if (key) this._handleRenameItem(key, label);
-        }
-      },
-      {
-        name: "刷新连接",
-        icon: '<i class="fa-solid fa-rotate"></i>',
-        callback: (target) => {
-          const el = target instanceof HTMLElement ? target : target?.[0];
-          const key = el?.dataset?.aqbKey;
-          if (key) this._handleRefreshItemLabel(key);
-        }
-      }
-    ]);
-
+    this._closeItemPopover(); 
   }
 
   /* -------------------------------------------- */
@@ -138,8 +120,6 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
   _handleContextMenu(ev) {
     const target = ev.target;
     if (!target) return;
-
-    if (target.closest?.(".aqb-item-btn")) return;
 
     const btn = target.closest?.("button[data-aqb-roll]");
     if (!btn) return;
@@ -163,8 +143,15 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       this._handleExtraEffectDelete(key);
       return;
     }
-  }
 
+    if (roll === "item" || roll === "spell") {
+      ev.preventDefault();
+      ev.stopImmediatePropagation?.();
+      ev.stopPropagation();
+      this._openItemPopover(btn);
+      return;
+    }
+  }
 
   _handleWheel(ev) {
     const scroller = this._findScrollableAncestor(ev.target);
@@ -191,6 +178,102 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const fallback = this.element.querySelector?.(".aqb-spells-content");
     if (fallback && fallback.scrollHeight > fallback.clientHeight) return fallback;
     return null;
+  }
+
+  _closeItemPopover() {
+    if (this._itemPopoverEl) this._itemPopoverEl.remove();
+    this._itemPopoverEl = null;
+    if (this._itemPopoverDismissHandler) document.removeEventListener("mousedown", this._itemPopoverDismissHandler, true);
+    if (this._itemPopoverEscHandler) document.removeEventListener("keydown", this._itemPopoverEscHandler, true);
+    this._itemPopoverDismissHandler = null;
+    this._itemPopoverEscHandler = null;
+  }
+
+  _openItemPopover(anchorBtn) {
+    const btn = anchorBtn instanceof HTMLElement ? anchorBtn : null;
+    const key = btn?.dataset?.aqbKey;
+    const roll = btn?.dataset?.aqbRoll;
+    if (!btn || !key || !roll) return;
+
+    this._closeItemPopover();
+
+    const label = btn.querySelector?.(".aqb-item-main")?.textContent ?? "";
+    const pop = document.createElement("div");
+    pop.classList.add("aqb-item-popover");
+    pop.dataset.aqbKey = key;
+    pop.dataset.aqbRoll = roll;
+
+    const actor = this._getBoundActor();
+    const item = actor?.items?.get?.(key) ?? null;
+    const isHidden = Boolean(item?.getFlag?.(MODULE_ID, "hidden") ?? item?.flags?.[MODULE_ID]?.hidden);
+    const hideMode = (roll === "spell") ? this._spellsHideMode : (this._activeTab === "features" ? this._featuresHiddenMode : this._itemsHideMode);
+    const canUnhide = hideMode === "disable" && isHidden;
+    const hideAction = canUnhide ? "show" : "hide";
+    const hideLabel = canUnhide ? "显示" : "隐藏";
+
+    pop.innerHTML = `
+      <button type="button" class="aqb-item-popover-btn" data-aqb-action="rename">重命名</button>
+      <button type="button" class="aqb-item-popover-btn" data-aqb-action="reset">重置</button>
+      <button type="button" class="aqb-item-popover-btn" data-aqb-action="${hideAction}">${hideLabel}</button> <!-- [MODIFIED] -->
+      <button type="button" class="aqb-item-popover-btn" data-aqb-action="view">显示详情</button>
+      <button type="button" class="aqb-item-popover-btn" data-aqb-action="chat">发送到聊天</button>
+    `;
+
+    pop.style.visibility = "hidden";
+    document.body.appendChild(pop);
+
+    const rect = btn.getBoundingClientRect();
+    const margin = 6;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const pw = pop.offsetWidth;
+    const ph = pop.offsetHeight;
+
+    let left = rect.left;
+    let top = rect.bottom + margin;
+    if (left + pw + margin > vw) left = Math.max(margin, vw - pw - margin);
+    if (top + ph + margin > vh) top = Math.max(margin, rect.top - ph - margin);
+
+    pop.style.left = `${Math.round(left)}px`;
+    pop.style.top = `${Math.round(top)}px`;
+    pop.style.visibility = "";
+
+    pop.addEventListener("click", async (ev) => {
+      const actionBtn = ev.target?.closest?.("button[data-aqb-action]");
+      const action = actionBtn?.dataset?.aqbAction;
+      if (!action) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      await this._handleItemPopoverAction(action, key, label);
+      this._closeItemPopover();
+    });
+
+    this._itemPopoverDismissHandler = (ev) => {
+      const t = ev?.target;
+      if (!(t instanceof Node)) return;
+      if (pop.contains(t) || btn.contains(t)) return;
+      this._closeItemPopover();
+    };
+    document.addEventListener("mousedown", this._itemPopoverDismissHandler, true);
+
+    this._itemPopoverEscHandler = (ev) => {
+      if (ev?.key === "Escape") this._closeItemPopover();
+    };
+    document.addEventListener("keydown", this._itemPopoverEscHandler, true);
+
+    this._itemPopoverEl = pop;
+  }
+
+  async _handleItemPopoverAction(action, itemId, currentLabel = "") {
+    switch (action) {
+      case "rename": return this._handleRenameItem(itemId, currentLabel);
+      case "reset": return this._handleRefreshItemLabel(itemId);
+      case "hide": return this._handleMarkItemHidden(itemId);
+      case "show": return this._handleUnhideItem(itemId);
+      case "view": return this._handleViewItem(itemId);
+      case "chat": return this._handleDisplayItemInChat(itemId);
+      default: return null;
+    }
   }
 
   /* -------------------------------------------- */
@@ -247,6 +330,13 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       return;
     }
 
+    // 隐藏法术（暂不提供功能，仅保留状态）
+    if (target.matches("select[data-aqb-spells-hide]")) {
+      this._spellsHideMode = target.value || "hide";
+      this.render(false);
+      return;
+    }
+
     // 所持物排序
     if (target.matches("select[data-aqb-items-sort]")) {
       this._itemsSortMode = target.value || "type-weapon";
@@ -284,6 +374,9 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     switch (action) {
       case "initiative": return this._handleInitiative();
       case "death-save": return this._handleDeathSave();
+      case "hit-dice": return this._handleHitDice();
+      case "short-rest": return this._handleShortRest();
+      case "long-rest": return this._handleLongRest();
       case "status": return key ? this._handleStatusToggle(key) : null;
       case "movement-action": return key ? this._handleMovementAction(key) : null;
       case "extra-effect": return key ? this._handleExtraEffectToggle(key) : null;
@@ -305,7 +398,10 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     return this._getBoundToken()?.actor ?? null;
   }
 
-  _onUpdateAny(doc) {
+  _onUpdateAny(...args) {
+    let doc = args?.[0];
+    if (doc?.documentName === "Scene" && args?.[1]?.documentName === "Token") doc = args[1];
+
     const bound = this._getBoundActor();
     if (!bound) return;
     
@@ -386,15 +482,95 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     await item.unsetFlag(MODULE_ID, "alias");
   }
 
+  async _handleMarkItemHidden(itemId) {
+    const actor = this._getBoundActor();
+    if (!actor) return;
+    const item = actor.items.get(itemId);
+    if (!item) return warn("AQB：未找到该物品。");
+    await item.setFlag(MODULE_ID, "hidden", true);
+  }
+
+  async _handleUnhideItem(itemId) {
+    const actor = this._getBoundActor();
+    if (!actor) return;
+    const item = actor.items.get(itemId);
+    if (!item) return warn("AQB：未找到该物品。");
+    await item.unsetFlag(MODULE_ID, "hidden");
+  }
+
+  async _handleViewItem(itemId) {
+    const actor = this._getBoundActor();
+    if (!actor) return;
+    const item = actor.items.get(itemId);
+    if (!item) return warn("AQB：未找到该物品。");
+    item.sheet?.render?.(true);
+  }
+
+  async _handleDisplayItemInChat(itemId) {
+    const actor = this._getBoundActor();
+    if (!actor) return;
+    const item = actor.items.get(itemId);
+    if (!item) return warn("AQB：未找到该物品。");
+    if (typeof item.displayCard === "function") return item.displayCard();
+    if (typeof item.toChat === "function") return item.toChat();
+    return warn("AQB：当前系统不支持发送到聊天。");
+  }
+
   async _handleInitiative() { await this._safeRun("先攻检定", (actor) => rollInitiativeCheck(actor)); }
-  async _handleDeathSave() { await this._safeRun("死亡豁免", (actor) => rollDeathSave(actor)); }
+  async _handleDeathSave() {
+    await this._safeRun("死亡豁免", (actor) => {
+      const hp = Number(actor?.system?.attributes?.hp?.value ?? NaN);
+      const death = actor?.system?.attributes?.death ?? {};
+      const success = Number(death?.success ?? 0);
+      const failure = Number(death?.failure ?? 0);
+      if (!Number.isFinite(hp) || hp > 0) return null;
+      if (success >= 3 || failure >= 3) return null;
+      return rollDeathSave(actor);
+    });
+  }
+
+  async _handleHitDice() {
+    await this._safeRun("生命骰", async (actor) => {
+      if (typeof actor.rollHitDie !== "function") return warn("AQB：当前系统不支持生命骰掷骰。");
+      try {
+        await actor.rollHitDie({ dialog: true });
+      } catch (_e) {
+        await actor.rollHitDie(undefined, { dialog: true });
+      }
+    });
+  }
+
+  async _handleShortRest() {
+    await this._safeRun("短休", async (actor) => {
+      if (typeof actor.shortRest !== "function") return warn("AQB：当前系统不支持短休。");
+      try {
+        await actor.shortRest({ dialog: true });
+      } catch (_e) {
+        await actor.shortRest();
+      }
+    });
+  }
+
+  async _handleLongRest() {
+    await this._safeRun("长休", async (actor) => {
+      if (typeof actor.longRest !== "function") return warn("AQB：当前系统不支持长休。");
+      try {
+        await actor.longRest({ dialog: true });
+      } catch (_e) {
+        await actor.longRest();
+      }
+    });
+  }
+
   async _handleSpellUse(itemId) { 
+
     await this._safeRun("施放法术", async (actor) => {
       const item = actor.items?.get?.(itemId);
       if (!item) return warn("AQB：未找到该法术。");
       await useDnd5eItem(item);
     });
   }
+
   async _handleItemUse(itemId) {
     await this._safeRun("使用物品", async (actor) => {
       const item = actor.items?.get?.(itemId);
@@ -436,18 +612,23 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     });
   }
 
-  async _handleExtraEffectToggle(effectId) {
+  async _handleExtraEffectToggle(effectUuid) {
     await this._safeRun("切换效应", async (actor) => {
-      const effect = actor.effects?.get?.(effectId);
-      if (!effect) return warn("AQB：未找到该效应。");
+      const effect = effectUuid ? await fromUuid(effectUuid) : null;
+      if (!effect || effect.documentName !== "ActiveEffect") return warn("AQB：未找到该效应。");
+      const ownerActor = (effect.parent?.documentName === "Actor") ? effect.parent : effect.parent?.parent;
+      if (ownerActor?.documentName === "Actor" && ownerActor?.id !== actor.id) return;
       await effect.update({ disabled: !Boolean(effect.disabled) });
     });
   }
 
-  async _handleExtraEffectDelete(effectId) {
+  async _handleExtraEffectDelete(effectUuid) {
     await this._safeRun("删除效应", async (actor) => {
-      const effect = actor.effects?.get?.(effectId);
-      if (!effect) return;
+      const effect = effectUuid ? await fromUuid(effectUuid) : null;
+      if (!effect || effect.documentName !== "ActiveEffect") return;
+      if (effect.parent?.documentName !== "Actor") return;
+      const ownerActor = effect.parent;
+      if (ownerActor?.id !== actor.id) return;
       await effect.delete();
     });
   }
@@ -475,6 +656,7 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
   _onClose(options) {
     super._onClose(options);
+    this._closeItemPopover();
     Hooks.off("updateActor", this._handleUpdate);
     Hooks.off("updateToken", this._handleUpdate);
     Hooks.off("updateItem", this._handleUpdate);

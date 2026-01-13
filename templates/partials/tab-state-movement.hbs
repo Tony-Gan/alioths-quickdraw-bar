@@ -9,7 +9,7 @@
         <h1>额外状态</h1>
         <div class="aqb-state-move-list">
           {{#each stateMoveExtraStatusButtons}}
-            {{> "modules/alioths-quickdraw-bar/templates/partials/components/icon-toggle-button.hbs" roll="extra-effect" key=effectId icon=icon label=label toggled=toggled disabled=disabled}}{{!-- // [MODIFIED] --}}
+            {{> "modules/alioths-quickdraw-bar/templates/partials/components/icon-toggle-button.hbs" roll="extra-effect" key=effectKey icon=icon label=label toggled=toggled disabled=disabled}}
           {{/each}}
         </div>
       </section>
@@ -27,7 +27,7 @@
         <h1>移动</h1>
         <div class="aqb-state-move-list">
           {{#each stateMoveMovementButtons}}
-            {{> "modules/alioths-quickdraw-bar/templates/partials/components/icon-toggle-button.hbs" roll="movement-action" key=actionId icon=icon iconClass=iconClass label=label toggled=toggled disabled=disabled}}{{!-- // [MODIFIED] --}}
+            {{> "modules/alioths-quickdraw-bar/templates/partials/components/icon-toggle-button.hbs" roll="movement-action" key=actionId icon=icon iconClass=iconClass label=label toggled=toggled disabled=disabled}}
           {{/each}}
         </div>
       </section>

@@ -10,7 +10,7 @@ const COMMON_STATUS_DEFS = [
   { statusId: "blinded", label: "目盲", sort: "Blinded" },
   { statusId: "deafened", label: "耳聋", sort: "Deafened" },
   { statusId: "grappled", label: "受擒", sort: "Grappled" },
-  { statusId: "hidden", label: "隐匿", sort: "Hidden" },
+  { statusId: "hide", label: "隐匿", sort: "Hidden" }, 
   { statusId: "incapacitated", label: "失能", sort: "Incapacitated" },
   { statusId: "invisible", label: "隐形", sort: "Invisible" },
   { statusId: "poisoned", label: "中毒", sort: "Poisoned" },
@@ -22,10 +22,18 @@ const COMMON_STATUS_DEFS = [
 
 const COMMON_STATUS_IDS = COMMON_STATUS_DEFS.map((s) => s.statusId);
 
-/**
- * 核心数据构建器
- */
-export async function buildDashboardContext(currentTokenId, activeTab, spellsSortMode, spellsUnpreparedMode, itemsSortMode, itemsHideMode, featuresPassiveMode, featuresHiddenMode) {
+const MOVEMENT_ACTION_LABELS_ZH = { 
+  walk: "步行", 
+  fly: "飞行", 
+  swim: "游泳", 
+  climb: "攀爬", 
+  burrow: "掘穴", 
+  teleport: "传送", 
+  blink: "传送", 
+  Blink: "传送" 
+}; 
+
+export async function buildDashboardContext(currentTokenId, activeTab, spellsSortMode, spellsUnpreparedMode, spellsHideMode, itemsSortMode, itemsHideMode, featuresPassiveMode, featuresHiddenMode) {
   const ownedTokens = getOwnedTokensInScene();
   const controlled = canvas?.tokens?.controlled?.[0];
 
@@ -88,7 +96,7 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
 
   const allFeatureButtons = getActorFeatureButtons(actor);
   const passiveMode = featuresPassiveMode || "show";
-  const hiddenMode = featuresHiddenMode || "hide";
+  const hiddenMode = (featuresHiddenMode === "disable") ? "disable" : "hide";
 
   const featureButtonsProcessed = passiveMode === "hide"
     ? (allFeatureButtons ?? []).filter((f) => !f.isPassive)
@@ -96,18 +104,58 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
 
   const unpreparedMode = spellsUnpreparedMode || "disable";
 
+  const safeItemsHideMode = (itemsHideMode === "disable") ? "disable" : "hide";
+  const safeSpellsHideMode = (spellsHideMode === "disable") ? "disable" : "hide";
+
+  const isFlaggedHidden = (itemId) => {
+    const it = actor?.items?.get?.(itemId);
+    const flag = it?.getFlag?.(MODULE_ID, "hidden") ?? it?.flags?.[MODULE_ID]?.hidden;
+    return Boolean(flag);
+  };
+
+  const featureButtonsHiddenProcessed = (featureButtonsProcessed ?? [])
+    .map((f) => {
+      const isHidden = isFlaggedHidden(f.id);
+      if (isHidden && hiddenMode === "hide") return null;
+      return {
+        ...f,
+        disabled: Boolean(f.disabled) || (isHidden && hiddenMode === "disable")
+      };
+    })
+    .filter((f) => Boolean(f));
 
   const spellSectionsProcessed = (spellSections ?? [])
     .map((section) => {
       const spells = (section.spells ?? [])
         .filter((s) => unpreparedMode !== "hide" || s.prepState !== "unprepared")
-        .map((s) => ({
-          ...s,
-          disabled: unpreparedMode === "disable" && s.prepState === "unprepared"
-        }));
+        .map((s) => {
+          const isHidden = isFlaggedHidden(s.id);
+          if (isHidden && safeSpellsHideMode === "hide") return null;
+          return {
+            ...s,
+            disabled: (unpreparedMode === "disable" && s.prepState === "unprepared") || (isHidden && safeSpellsHideMode === "disable")
+          };
+        })
+        .filter((s) => Boolean(s));
       return { ...section, spells };
     })
     .filter((section) => (section.spells?.length ?? 0) > 0);
+
+  const itemSectionsProcessed = (itemSectionsRaw ?? [])
+    .map((section) => {
+      const items = (section.items ?? [])
+        .map((it) => {
+          const isHidden = isFlaggedHidden(it.id);
+          if (isHidden && safeItemsHideMode === "hide") return null;
+          return {
+            ...it,
+            disabled: Boolean(it.disabled) || (isHidden && safeItemsHideMode === "disable")
+          };
+        })
+        .filter((it) => Boolean(it));
+      return { ...section, items };
+    })
+    .filter((section) => (section.items?.length ?? 0) > 0);
 
   const spellsSortModes = [
     { value: "level", label: "按环位", selected: spellsSortMode === "level" },
@@ -121,9 +169,8 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
   ];
 
   const itemsHideModes = [
-    { value: "hide", label: "隐藏", selected: (itemsHideMode ?? "hide") === "hide" },
-    { value: "show", label: "正常显示", selected: itemsHideMode === "show" },
-    { value: "disable", label: "禁用", selected: itemsHideMode === "disable" }
+    { value: "hide", label: "隐藏", selected: safeItemsHideMode === "hide" },
+    { value: "disable", label: "显示", selected: safeItemsHideMode === "disable" }
   ];
 
   const featuresPassiveModes = [
@@ -133,14 +180,16 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
 
   const featuresHiddenModes = [
     { value: "hide", label: "隐藏", selected: hiddenMode === "hide" },
-    { value: "show", label: "正常显示", selected: hiddenMode === "show" },
-    { value: "disable", label: "禁用", selected: hiddenMode === "disable" }
+    { value: "disable", label: "显示", selected: hiddenMode === "disable" }
+  ];
+
+  const spellsHideModes = [
+    { value: "hide", label: "隐藏", selected: safeSpellsHideMode === "hide" },
+    { value: "disable", label: "显示", selected: safeSpellsHideMode === "disable" }
   ];
 
   const spellsUnpreparedModes = [
     { value: "disable", label: "按钮禁用", selected: unpreparedMode === "disable" },
-
-
     { value: "ignore", label: "忽略", selected: unpreparedMode === "ignore" },
     { value: "hide", label: "隐藏", selected: unpreparedMode === "hide" }
   ];
@@ -175,7 +224,6 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
     isTabSpells: activeTab === "spells",
     isTabChecks: activeTab === "checks",
     isTabStateMove: activeTab === "stateMove",
-    isTabOther: activeTab === "other",
     isTabCustom: activeTab === "custom",
 
     buttonsDisabled,
@@ -197,20 +245,21 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
 
     featuresPassiveModes,
     featuresHiddenModes,
-    featureItems: featureButtonsProcessed,
-    hasFeatureItems: (featureButtonsProcessed?.length ?? 0) > 0,
+    featureItems: featureButtonsHiddenProcessed,
+    hasFeatureItems: (featureButtonsHiddenProcessed?.length ?? 0) > 0,
 
     spellSlotsSummary,
     spellsSortModes,
     spellsUnpreparedModes,
+    spellsHideModes,
 
     spellSections: spellSectionsProcessed,
     hasSpellSections: (spellSectionsProcessed?.length ?? 0) > 0,
 
     itemsSortModes,
     itemsHideModes,
-    itemSections: itemSectionsRaw,
-    hasItemSections: (itemSectionsRaw?.length ?? 0) > 0 
+    itemSections: itemSectionsProcessed,
+    hasItemSections: (itemSectionsProcessed?.length ?? 0) > 0 
   };
 }
 
@@ -218,16 +267,39 @@ function buildCommonStatusButtons(boundToken, buttonsDisabled) {
   const tokenDoc = boundToken?.document ?? null;
   const statusEffects = Array.isArray(CONFIG?.statusEffects) ? CONFIG.statusEffects : [];
 
+  const hasStatus = (id) => {
+    if (!id) return false;
+    if (typeof tokenDoc?.hasStatusEffect === "function") return Boolean(tokenDoc.hasStatusEffect(id));
+    const statuses = tokenDoc?.statuses;
+    if (statuses instanceof Set) return statuses.has(id);
+    if (Array.isArray(statuses)) return statuses.includes(id);
+    return false;
+  };
+
+  const findCfg = (statusId) => {
+    return statusEffects.find((e) => e?.id === statusId || e?.statusId === statusId)
+      ?? statusEffects.find((e) => e?.id === `dnd5e.${statusId}` || e?.statusId === `dnd5e.${statusId}`)
+      ?? statusEffects.find((e) => String(e?.id ?? e?.statusId ?? "").endsWith(`.${statusId}`));
+  };
+
   return COMMON_STATUS_DEFS
     .slice()
     .sort((a, b) => a.sort.localeCompare(b.sort))
     .map((s) => {
-      const cfg = statusEffects.find((e) => e?.id === s.statusId || e?.statusId === s.statusId);
+      const cfg = findCfg(s.statusId);
+      const cfgId = cfg?.id ?? cfg?.statusId ?? null;
+      const idsToCheck = [s.statusId];
+      if (cfgId && !idsToCheck.includes(cfgId)) idsToCheck.push(cfgId);
+      if (cfgId && typeof cfgId === "string" && cfgId.includes(".")) {
+        const suffix = cfgId.split(".").pop();
+        if (suffix && !idsToCheck.includes(suffix)) idsToCheck.push(suffix);
+      }
+
       return {
         statusId: s.statusId,
         label: s.label,
-        icon: cfg?.icon ?? "",
-        toggled: tokenDoc?.hasStatusEffect?.(s.statusId) ?? false,
+        icon: cfg?.img ?? cfg?.icon ?? "",
+        toggled: idsToCheck.some((id) => hasStatus(id)),
         disabled: Boolean(buttonsDisabled)
       };
     });
@@ -237,21 +309,23 @@ function buildExtraStatusButtons(actor, buttonsDisabled) {
   if (!actor) return [];
 
   const commonSet = new Set(COMMON_STATUS_IDS);
-  const effects = actor.effects?.contents ?? [];
+  const effects = Array.isArray(actor.appliedEffects) ? actor.appliedEffects : (actor.effects?.contents ?? []);
 
   return effects
     .filter((e) => {
+      if (e?.isSuppressed) return false;
       const statuses = e?.statuses;
       if (!(statuses instanceof Set)) return true;
       for (const s of statuses) {
-        if (commonSet.has(s)) return false;
+        if (commonSet.has(String(s))) return false;
       }
       return true;
     })
     .map((e) => ({
+      effectKey: e.uuid,
       effectId: e.id,
       label: e.name ?? "",
-      icon: e.img ?? e.icon ?? "",
+      icon: e.img ?? e.icon ?? e.parent?.img ?? "",
       toggled: !Boolean(e.disabled),
       disabled: Boolean(buttonsDisabled)
     }))
@@ -262,17 +336,22 @@ function buildMovementButtons(boundToken, buttonsDisabled) {
   const tokenDoc = boundToken?.document ?? null;
   if (!tokenDoc) return [];
 
-  const actionOrder = ["walk", "fly", "swim", "climb", "burrow", "teleport"];
   const actions = CONFIG?.Token?.movement?.actions ?? {};
   const defaultAction = CONFIG?.Token?.movement?.defaultAction ?? "walk";
   const currentAction = tokenDoc?.movementAction ?? defaultAction;
 
+  const baseOrder = ["walk", "fly", "swim", "climb", "burrow"];
+  const extraOrder = ["teleport", "blink", "Blink"].filter((id) => Boolean(actions?.[id]));
+  const actionOrder = [...baseOrder, ...extraOrder].filter((id) => Boolean(actions?.[id]));
+
   return actionOrder
     .map((actionId) => {
       const cfg = actions?.[actionId] ?? null;
+      if (!cfg) return null;
       const canSelect = typeof cfg?.canSelect === "function" ? cfg.canSelect(tokenDoc) : true;
-      const labelKey = cfg?.label ?? actionId;
-      const label = game.i18n?.localize?.(labelKey) ?? labelKey;
+      const labelKey = cfg?.label ?? cfg?.name ?? actionId;
+      const localized = game.i18n?.localize?.(labelKey) ?? labelKey;
+      const label = MOVEMENT_ACTION_LABELS_ZH[actionId] ?? localized;
       const toggled = currentAction === actionId;
       return {
         actionId,
@@ -283,5 +362,5 @@ function buildMovementButtons(boundToken, buttonsDisabled) {
         disabled: Boolean(buttonsDisabled) || (!canSelect && !toggled)
       };
     })
-    .filter((b) => Boolean(b.actionId));
+    .filter((b) => Boolean(b?.actionId));
 }

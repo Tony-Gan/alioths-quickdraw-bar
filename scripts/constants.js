@@ -14,7 +14,6 @@ export const TABS = [
   { key: "spells", label: "法术" },
   { key: "checks", label: "检定/豁免" },
   { key: "stateMove", label: "状态/移动" },
-  { key: "other", label: "其他" },
   { key: "custom", label: "自定义" }
 ];
 
