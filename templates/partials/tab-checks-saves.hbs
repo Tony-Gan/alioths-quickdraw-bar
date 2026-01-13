@@ -1,0 +1,64 @@
+<div class="aqb-checks-layout">
+  <section class="aqb-checks-col aqb-col-grid-2">
+    <h2>属性检定</h2>
+    <div class="aqb-grid-content">
+      {{#each abilityChecks}}
+        {{> "modules/alioths-quickdraw-bar/templates/partials/components/split-button.hbs" roll="ability-check" key=id label=label info=mod disabled=../buttonsDisabled}}
+      {{/each}}
+    </div>
+  </section>
+
+  <section class="aqb-checks-col aqb-col-grid-2">
+    <h2>属性豁免</h2>
+    <div class="aqb-grid-content">
+      {{#each abilitySaves}}
+        {{> "modules/alioths-quickdraw-bar/templates/partials/components/split-button.hbs" roll="ability-save" key=id label=label info=mod disabled=../buttonsDisabled}}
+      {{/each}}
+    </div>
+  </section>
+
+  <section class="aqb-checks-col aqb-col-skills-stack">
+    <h2>技能检定</h2>
+    <div class="aqb-skill-stack-container">
+      <div class="aqb-skill-row-group">
+        {{#each skillsRow1}}
+          {{#each skills}}
+            {{> "modules/alioths-quickdraw-bar/templates/partials/components/split-button.hbs" roll="skill" key=id label=label info=mod disabled=../../buttonsDisabled}}
+          {{/each}}
+        {{/each}}
+      </div>
+      
+      <div class="aqb-skill-row-group">
+        {{#each skillsRow2}}
+          {{#each skills}}
+            {{> "modules/alioths-quickdraw-bar/templates/partials/components/split-button.hbs" roll="skill" key=id label=label info=mod disabled=../../buttonsDisabled}}
+          {{/each}}
+        {{/each}}
+      </div>
+
+      <div class="aqb-skill-row-group">
+        {{#each skillsRow3}}
+          {{#each skills}}
+            {{> "modules/alioths-quickdraw-bar/templates/partials/components/split-button.hbs" roll="skill" key=id label=label info=mod disabled=../../buttonsDisabled}}
+          {{/each}}
+        {{/each}}
+      </div>
+
+      <div class="aqb-skill-row-group">
+        {{#each skillsRow4}}
+          {{#each skills}}
+            {{> "modules/alioths-quickdraw-bar/templates/partials/components/split-button.hbs" roll="skill" key=id label=label info=mod disabled=../../buttonsDisabled}}
+          {{/each}}
+        {{/each}}
+      </div>
+    </div>
+  </section>
+
+  <section class="aqb-checks-col aqb-col-grid-2 aqb-col-fill">
+    <h2>其他检定</h2>
+    <div class="aqb-grid-content">
+      {{> "modules/alioths-quickdraw-bar/templates/partials/components/split-button.hbs" roll="initiative" icon=genericIcon label="先攻" info=initiativeMod disabled=buttonsDisabled}}
+      {{> "modules/alioths-quickdraw-bar/templates/partials/components/split-button.hbs" roll="death-save" icon=genericIcon label="死豁" info=deathSaveMod disabled=buttonsDisabled}}
+    </div>
+  </section>
+</div>

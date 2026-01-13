@@ -1,0 +1,46 @@
+<div class="aqb-items">
+  <div class="aqb-items-top">
+    <div class="aqb-items-controls">
+      <div class="aqb-items-sort">
+        <span>排列方式</span>
+        <select data-aqb-items-sort {{#if buttonsDisabled}}disabled{{/if}}>
+          {{#each itemsSortModes}}
+            <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </div>
+
+      <div class="aqb-items-hide">
+        <span>隐藏物品</span>
+        <select data-aqb-items-hide {{#if buttonsDisabled}}disabled{{/if}}>
+          {{#each itemsHideModes}}
+            <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </div>
+    </div>
+  </div>
+
+  {{#if buttonsDisabled}}
+    <div class="aqb-items-content">
+      <p>未绑定角色。请先选择一个你拥有的 Token。</p>
+    </div>
+  {{else}}
+    <div class="aqb-items-content">
+      {{#if hasItemSections}}
+        {{#each itemSections}}
+          <section class="aqb-section aqb-item-section">
+            <h1>{{title}}</h1>
+            <div class="aqb-item-list">
+              {{#each items}}
+                {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="item" key=id icon=icon label=name info=usesText}}
+              {{/each}}
+            </div>
+          </section>
+        {{/each}}
+      {{else}}
+        <p>该角色没有可用的物品。</p>
+      {{/if}}
+    </div>
+  {{/if}}
+</div>

@@ -1,0 +1,36 @@
+<div class="aqb-state-move">
+  {{#if buttonsDisabled}}
+    <div class="aqb-state-move-content">
+      <p>未绑定角色。请先选择一个你拥有的 Token。</p>
+    </div>
+  {{else}}
+    <div class="aqb-state-move-content">
+      <section class="aqb-section aqb-state-move-section">
+        <h1>额外状态</h1>
+        <div class="aqb-state-move-list">
+          {{#each stateMoveExtraStatusButtons}}
+            {{> "modules/alioths-quickdraw-bar/templates/partials/components/icon-toggle-button.hbs" roll="extra-effect" key=effectId icon=icon label=label toggled=toggled disabled=disabled}}{{!-- // [MODIFIED] --}}
+          {{/each}}
+        </div>
+      </section>
+
+      <section class="aqb-section aqb-state-move-section">
+        <h1>通用状态</h1>
+        <div class="aqb-state-move-list">
+          {{#each stateMoveCommonStatusButtons}}
+            {{> "modules/alioths-quickdraw-bar/templates/partials/components/icon-toggle-button.hbs" roll="status" key=statusId icon=icon label=label toggled=toggled disabled=disabled}}
+          {{/each}}
+        </div>
+      </section>
+
+      <section class="aqb-section aqb-state-move-section">
+        <h1>移动</h1>
+        <div class="aqb-state-move-list">
+          {{#each stateMoveMovementButtons}}
+            {{> "modules/alioths-quickdraw-bar/templates/partials/components/icon-toggle-button.hbs" roll="movement-action" key=actionId icon=icon iconClass=iconClass label=label toggled=toggled disabled=disabled}}{{!-- // [MODIFIED] --}}
+          {{/each}}
+        </div>
+      </section>
+    </div>
+  {{/if}}
+</div>

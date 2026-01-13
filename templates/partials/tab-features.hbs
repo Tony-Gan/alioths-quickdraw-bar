@@ -1,0 +1,41 @@
+<div class="aqb-features">
+  <div class="aqb-features-top">
+    <div class="aqb-features-controls">
+      <div class="aqb-features-passive">
+        <span>被动特性</span>
+        <select data-aqb-features-passive {{#if buttonsDisabled}}disabled{{/if}}>
+          {{#each featuresPassiveModes}}
+            <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </div>
+
+      <div class="aqb-features-hidden">
+        <span>隐藏特性</span>
+        <select data-aqb-features-hidden {{#if buttonsDisabled}}disabled{{/if}}>
+          {{#each featuresHiddenModes}}
+            <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </div>
+    </div>
+  </div>
+
+  {{#if buttonsDisabled}}
+    <div class="aqb-features-content">
+      <p>未绑定角色。请先选择一个你拥有的 Token。</p>
+    </div>
+  {{else}}
+    <div class="aqb-features-content">
+      {{#if hasFeatureItems}}
+        <div class="aqb-feature-list">
+          {{#each featureItems}}
+            {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="item" key=id icon=icon label=name info=usesText }}
+          {{/each}}
+        </div>
+      {{else}}
+        <p>该角色没有可用的特性。</p>
+      {{/if}}
+    </div>
+  {{/if}}
+</div>

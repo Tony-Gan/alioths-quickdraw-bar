@@ -1,0 +1,53 @@
+{
+  "id": "alioths-quickdraw-bar",
+  "title": "Alioth's Quickdraw Bar",
+  "description": "Alioth's Quickdraw Bar 快捷工具栏",
+  "version": "0.8.3",
+  "authors": [
+    {
+      "name": "ChatGPT/Gemini, my employees"
+    },
+    {
+      "name": "Alioth",
+      "qq": "461450975"
+    }
+  ],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13.351"
+  },
+  "relationships": {
+    "systems": [
+      {
+        "id": "dnd5e",
+        "type": "system",
+        "compatibility": {
+          "minimum": "5.2.0",
+          "verified": "5.2.4"
+        }
+      }
+    ]
+  },
+  "esmodules": [
+    "scripts/module.js"
+  ],
+  "styles": [
+    "styles/aqb.css"
+  ],
+  "templates": [
+    "templates/dashboard.hbs",
+    "templates/partials/tab-items.hbs",
+    "templates/partials/tab-features.hbs",
+    "templates/partials/tab-spells.hbs",
+    "templates/partials/tab-checks-saves.hbs",
+    "templates/partials/tab-state-movement.hbs",
+    "templates/partials/tab-other.hbs",
+    "templates/partials/tab-custom.hbs",
+    "templates/partials/components/split-button.hbs",
+    "templates/partials/components/item-button.hbs",
+    "templates/partials/components/icon-toggle-button.hbs"
+  ],
+  "url": "https://github.com/Tony-Gan/alioths-quickdraw-bar",
+  "manifest": "https://github.com/Tony-Gan/alioths-quickdraw-bar/releases/latest/download/module.json",
+  "download": "https://github.com/Tony-Gan/alioths-quickdraw-bar/releases/download/0.8.3/module.zip"
+}

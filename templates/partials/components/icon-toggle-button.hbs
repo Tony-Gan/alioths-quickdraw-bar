@@ -1,0 +1,18 @@
+<button type="button" class="aqb-btn aqb-icon-toggle-btn {{#if toggled}}is-on{{/if}}" data-aqb-roll="{{roll}}" data-aqb-key="{{key}}" aria-pressed="{{#if toggled}}true{{else}}false{{/if}}" {{#if title}}title="{{title}}"{{/if}} {{#if disabled}}disabled{{/if}}> 
+  <span class="aqb-item-icon-wrap"> 
+    {{#if icon}} 
+      <img class="aqb-item-icon" src="{{icon}}" alt="" /> 
+    {{else}} 
+      {{#if iconClass}} 
+        <i class="aqb-item-icon {{iconClass}}" aria-hidden="true"></i>
+      {{else}} 
+        <span class="aqb-item-icon aqb-item-icon-placeholder"></span> 
+      {{/if}} 
+    {{/if}} 
+  </span> 
+
+
+  <span class="aqb-icon-toggle-sep">|</span> 
+
+  <span class="aqb-icon-toggle-right" title="{{label}}">{{label}}</span> 
+</button> 

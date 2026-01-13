@@ -1,0 +1,49 @@
+<div class="aqb-spells">
+  <div class="aqb-spells-top">
+    <p class="aqb-spells-slots">{{spellSlotsSummary}}</p>
+
+    <div class="aqb-spells-controls">
+      <div class="aqb-spells-unprepared">
+        <span>未准备法术</span>
+        <select data-aqb-spells-unprepared {{#if buttonsDisabled}}disabled{{/if}}>
+          {{#each spellsUnpreparedModes}}
+            <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </div>
+
+      <div class="aqb-spells-sort">
+        <span>排列方式</span>
+        <select data-aqb-spells-sort {{#if buttonsDisabled}}disabled{{/if}}>
+          {{#each spellsSortModes}}
+            <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </div>
+    </div>
+  </div>
+
+  {{#if buttonsDisabled}}
+
+    <div class="aqb-spells-content">
+      <p>未绑定角色。请先选择一个你拥有的 Token。</p>
+    </div>
+  {{else}}
+    <div class="aqb-spells-content">
+      {{#if hasSpellSections}}
+        {{#each spellSections}}
+          <section class="aqb-section aqb-spell-section">
+            <h1>{{title}}</h1>
+            <div class="aqb-spell-list">
+              {{#each spells}}
+                {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="spell" key=id icon=icon label=name infoIcon=prepIcon title=prepTitle disabled=disabled}}
+              {{/each}}
+            </div>
+          </section>
+        {{/each}}
+      {{else}}
+        <p>该角色没有可用的法术。</p>
+      {{/if}}
+    </div>
+  {{/if}}
+</div>

@@ -1,0 +1,586 @@
+/* ========================================= */
+/* 0. 变量定义 */
+/* ========================================= */
+
+:root {
+  --aqb-bg-panel: var(--color-bg-light);
+  --aqb-bg-subtle: rgba(0, 0, 0, 0.03);
+  --aqb-bg-element: rgba(0, 0, 0, 0.05);
+  --aqb-bg-hover: var(--color-hover);
+  --aqb-border-main: var(--color-border-light-2);
+  --aqb-border-subtle: var(--color-border-light-1);
+  --aqb-text-primary: var(--color-text-dark-primary);
+  --aqb-text-secondary: var(--color-text-dark-secondary);
+  --aqb-text-muted: var(--color-text-light-5); 
+  --aqb-spacing: 4px;
+  --aqb-spacing-lg: 8px;
+  --aqb-btn-height: 24px;
+  --aqb-font-size: 12px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --aqb-text-primary: var(--color-text-light-primary);
+    --aqb-text-secondary: var(--color-text-light-highlight);
+    --aqb-text-muted: var(--color-text-light-heading);
+    --aqb-bg-panel: var(--color-bg-dark, #222); 
+    --aqb-bg-element: rgba(255, 255, 255, 0.05);
+    --aqb-bg-subtle: rgba(255, 255, 255, 0.03);
+    --aqb-border-main: var(--color-border-dark-primary, #444);
+    --aqb-border-subtle: var(--color-border-dark-secondary, #333);
+  }
+}
+
+/* ========================================= */
+/* 1. 窗口与基础布局 */
+/* ========================================= */
+
+.aqb-app .window-content {
+  padding: var(--aqb-spacing) !important;
+  overflow: hidden;
+  color: var(--aqb-text-primary);
+}
+
+.aqb-dashboard {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--aqb-spacing);
+}
+
+/* ========================================= */
+/* 2. 顶部导航栏 */
+/* ========================================= */
+
+.aqb-topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--aqb-spacing-lg);
+  flex: 0 0 auto;
+}
+
+.aqb-token select {
+  width: 9em;
+  max-width: 9em;
+  height: var(--aqb-btn-height);
+  font-size: 13px;
+}
+
+.aqb-spacer {
+  flex: 1;
+}
+
+.aqb-tabs {
+  display: flex;
+  align-items: flex-end;
+  gap: 7px;
+}
+
+.aqb-tab {
+  border: 1px solid transparent;
+  border-bottom: none;
+  border-radius: 4px 4px 0 0;
+  padding: 2px 8px;
+  font-size: var(--aqb-font-size);
+  background: var(--aqb-bg-subtle);
+  cursor: pointer;
+  color: var(--aqb-text-secondary);
+}
+
+.aqb-tab:hover {
+  background: rgba(0,0,0,0.08);
+}
+
+.aqb-tab.active {
+  font-weight: bold;
+  background: var(--aqb-bg-panel);
+  border: 1px solid var(--aqb-border-main);
+  border-bottom: 1px solid var(--aqb-bg-panel);
+  color: var(--aqb-text-primary);
+  position: relative;
+  top: 1px;
+}
+
+/* ========================================= */
+/* 3. 主体内容区 */
+/* ========================================= */
+
+.aqb-body {
+  flex: 1;
+  /* 关键：设置为 Flex Column，让子元素可以自适应高度 */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  border-top: 1px solid var(--aqb-border-main);
+  padding-top: var(--aqb-spacing);
+}
+
+.aqb-body h2 {
+  font-size: 0.8em;
+  font-weight: bold;
+  color: var(--aqb-text-muted);
+  margin: var(--aqb-spacing) 0 2px 0;
+  border-bottom: 1px solid var(--aqb-border-subtle);
+  line-height: 1.2;
+}
+
+.aqb-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.5;
+  font-style: italic;
+  color: var(--aqb-text-secondary);
+}
+
+/* ========================================= */
+/* 4. 检定页 (Checks) */
+/* ========================================= */
+
+.aqb-checks-layout {
+  flex: 1; 
+  display: flex;
+  flex-direction: row;
+  gap: var(--aqb-spacing-lg);
+  overflow-x: auto;
+  padding-bottom: var(--aqb-spacing);
+}
+
+/* 通用列容器 */
+.aqb-checks-col {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  overflow-y: hidden;
+}
+
+.aqb-col-grid-2 {
+  width: 164px; 
+}
+
+/* 内部 Grid 容器 (2列) */
+.aqb-grid-content {
+  display: grid;
+  grid-template-columns: repeat(2, 80px);
+  grid-auto-rows: 24px;
+  gap: 4px;
+  overflow-y: auto;
+  align-content: start;
+}
+
+/* 类型2：技能堆叠列 (变宽) */
+.aqb-col-skills-stack {
+  flex: 0 1 auto;
+  min-width: 250px;
+  display: flex;
+  flex-direction: column;
+}
+
+.aqb-col-fill {
+  flex: 1 1 auto;
+}
+
+.aqb-skill-stack-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+  flex: 1;
+  padding-right: 4px;
+}
+
+/* 技能每一行的内部 (流式排列技能) */
+.aqb-skill-row-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* ========================================= */
+/* 5. 按钮样式 */
+/* ========================================= */
+
+.aqb-app .aqb-btn {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid transparent;
+  background: var(--aqb-bg-element);
+  border-radius: 4px;
+  font-size: var(--aqb-font-size);
+  height: var(--aqb-btn-height);
+  padding: 0 6px;
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+  color: var(--aqb-text-primary);
+  white-space: nowrap;
+  overflow: hidden; 
+  max-width: 100%;
+}
+
+.aqb-app .aqb-btn:hover {
+  background: var(--aqb-bg-hover);
+  border-color: var(--aqb-border-main);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  color: var(--aqb-text-primary); 
+}
+
+.aqb-app .aqb-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(1);
+}
+
+/* --- Split Button (检定/豁免) --- */
+.aqb-app .aqb-split2-btn {
+  justify-content: space-between;
+  width: 80px !important;
+  height: 24px !important;
+  min-width: 0;
+  flex: 0 0 80px;
+}
+
+.aqb-app .aqb-split2-main {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+
+.aqb-app .aqb-split2-sep {
+  margin: 0 4px;
+  opacity: 0.2;
+  color: currentColor;
+}
+
+.aqb-app .aqb-split2-right {
+  font-family: var(--font-monospace);
+  font-weight: bold;
+  opacity: 0.9;
+}
+
+/* --- Icon Toggle Button (状态/移动) --- */
+.aqb-app .aqb-icon-toggle-btn {
+  justify-content: flex-start;
+  width: 80px !important;
+  height: 24px !important;
+  min-width: 0;
+  flex: 0 0 80px;
+  padding: 0 4px;
+}
+
+.aqb-app .aqb-icon-toggle-btn.is-on {
+  background: var(--aqb-bg-panel);
+  border-color: var(--aqb-border-main);
+}
+
+.aqb-app .aqb-icon-toggle-btn .aqb-item-icon-wrap {
+  flex: 0 0 26px;
+  max-width: 26px;
+  justify-content: center;
+}
+
+.aqb-app .aqb-icon-toggle-sep {
+  margin: 0 2px;
+  opacity: 0.35;
+  color: currentColor;
+}
+
+.aqb-app .aqb-icon-toggle-right {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- Item Button (法术/物品) --- */
+.aqb-app .aqb-item-btn {
+  width: 100%;
+  gap: 6px;
+}
+
+.aqb-app .aqb-item-icon-wrap {
+  display: flex;
+  align-items: center;
+  margin-right: 0;
+  flex: 0 1 20%;
+  max-width: 20%;
+  justify-content: flex-start;
+}
+
+
+.aqb-app .aqb-item-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 2px;
+  background: rgba(0,0,0,0.1);
+  object-fit: cover;
+  display: block;
+}
+
+.aqb-app i.aqb-item-icon {
+  line-height: 18px;
+  text-align: center;
+}
+
+.aqb-app .aqb-item-icon-placeholder {
+  display: inline-block;
+}
+
+.aqb-app .aqb-item-main {
+  flex: 1 1 60%;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  min-width: 0; 
+}
+
+.aqb-app .aqb-item-sep {
+  margin: 0;
+  opacity: 0.2;
+  flex-shrink: 0;
+}
+
+.aqb-app .aqb-item-right {
+  opacity: 0.9;
+  flex: 0 1 20%;
+  max-width: 20%;
+  font-size: 0.9em;
+  display: flex;
+  align-items: center;
+  min-width: 36px;
+  min-width: 0;
+  justify-content: flex-end;
+  font-family: var(--font-monospace);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+/* ========================================= */
+/* 6.1 所持物页样式 (Items) */
+/* ========================================= */
+
+.aqb-items {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column !important;
+  width: 100%;
+  overflow: hidden;
+}
+
+.aqb-items-top {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 6px;
+  font-size: var(--aqb-font-size);
+  border-bottom: 1px solid var(--aqb-border-subtle);
+  padding-bottom: var(--aqb-spacing);
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.aqb-items-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.aqb-items-sort,
+.aqb-items-hide {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.aqb-items-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+  min-height: 0;
+  width: 100%;
+  overscroll-behavior: contain;
+}
+
+.aqb-item-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: var(--aqb-spacing);
+}
+
+.aqb-item-section h1 {
+  display: block !important;
+  font-size: 0.9em !important;
+  margin: 6px 0 4px 0 !important;
+  border-bottom: none !important;
+  color: var(--aqb-text-secondary);
+}
+
+/* ========================================= */
+/* 6.2 特性页样式 (Features) */
+/* ========================================= */
+
+.aqb-features {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column !important;
+  width: 100%;
+  overflow: hidden;
+}
+
+.aqb-features-top {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 6px;
+  font-size: var(--aqb-font-size);
+  border-bottom: 1px solid var(--aqb-border-subtle);
+  padding-bottom: var(--aqb-spacing);
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.aqb-features-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.aqb-features-passive,
+.aqb-features-hidden {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.aqb-features-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+  min-height: 0;
+  width: 100%;
+  overscroll-behavior: contain;
+}
+
+.aqb-feature-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: var(--aqb-spacing);
+}
+
+/* ========================================= */
+/* 6. 法术页样式 (Spells) */
+/* ========================================= */
+
+
+.aqb-spells {
+  flex: 1; 
+  min-height: 0;
+  display: flex;
+  flex-direction: column !important;
+  width: 100%;
+  overflow: hidden;
+}
+
+.aqb-spells-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: var(--aqb-font-size);
+  border-bottom: 1px solid var(--aqb-border-subtle);
+  padding-bottom: var(--aqb-spacing);
+  flex-shrink: 0; 
+  width: 100%;
+}
+
+.aqb-spells-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.aqb-spells-unprepared {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.aqb-spells-sort {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.aqb-spells-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px; 
+  min-height: 0;
+  width: 100%;
+  overscroll-behavior: contain;
+}
+
+.aqb-spell-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: var(--aqb-spacing);
+}
+
+.aqb-spell-section h1 {
+  display: block !important;
+  font-size: 0.9em !important;
+  margin: 6px 0 4px 0 !important;
+  border-bottom: none !important;
+  color: var(--aqb-text-secondary);
+}
+
+/* ========================================= */
+/* 7. 状态/移动页样式 (State/Move) */
+/* ========================================= */
+
+.aqb-state-move {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column !important;
+  width: 100%;
+  overflow: hidden;
+}
+
+.aqb-state-move-content {
+  flex: 1;
+  overflow-y: auto;
+  padding-right: 4px;
+  min-height: 0;
+  width: 100%;
+  overscroll-behavior: contain;
+}
+
+.aqb-state-move-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 80px);
+  gap: var(--aqb-spacing);
+}
+
+.aqb-state-move-section h1 {
+  display: block !important;
+  font-size: 0.9em !important;
+  margin: 6px 0 4px 0 !important;
+  border-bottom: none !important;
+  color: var(--aqb-text-secondary);
+}
