@@ -12,12 +12,7 @@ function formatFeatureUses(item) {
   const value = Number(uses?.value ?? 0);
   if (!Number.isFinite(max) || max <= 0) return "";
   const v = Number.isFinite(value) ? value : 0;
-  return `${v}/${max}`;
-}
-
-function isPassiveFeature(item) {
-  const t = item?.system?.activation?.type;
-  return !t || t === "none" || t === "passive";
+  return `${v}`;
 }
 
 function mapFeatureButton(item) {
@@ -26,8 +21,7 @@ function mapFeatureButton(item) {
     id: item.id,
     name: displayName,
     icon: item.img,
-    usesText: formatFeatureUses(item),
-    isPassive: isPassiveFeature(item)
+    usesText: formatFeatureUses(item)
   };
 }
 

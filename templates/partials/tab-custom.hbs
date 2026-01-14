@@ -1,1 +1,46 @@
-<div class="aqb-empty"></div>
+<div class="aqb-items aqb-favorites">
+  {{#if buttonsDisabled}}
+    <div class="aqb-items-content">
+      <p>未绑定角色。请先选择一个你拥有的 Token。</p>
+    </div>
+  {{else}}
+    <div class="aqb-items-content">
+      {{#if hasFavorites}}
+        {{#if hasFavoriteItems}}
+          <section class="aqb-section aqb-item-section">
+            <h1>所持物</h1>
+            <div class="aqb-item-list">
+              {{#each favoriteItems}}
+                {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="item" key=id icon=icon label=name info=usesText favorited=true}}
+              {{/each}}
+            </div>
+          </section>
+        {{/if}}
+
+        {{#if hasFavoriteFeatures}}
+          <section class="aqb-section aqb-item-section">
+            <h1>特性</h1>
+            <div class="aqb-feature-list">
+              {{#each favoriteFeatures}}
+                {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="item" key=id icon=icon label=name info=usesText favorited=true}}
+              {{/each}}
+            </div>
+          </section>
+        {{/if}}
+
+        {{#if hasFavoriteSpells}}
+          <section class="aqb-section aqb-spell-section">
+            <h1>法术</h1>
+            <div class="aqb-spell-list">
+              {{#each favoriteSpells}}
+                {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="spell" key=id icon=icon label=name infoIcon=prepIcon title=prepTitle disabled=disabled favorited=true}}
+              {{/each}}
+            </div>
+          </section>
+        {{/if}}
+      {{else}}
+        <p>没有收藏的按钮。</p>
+      {{/if}}
+    </div>
+  {{/if}}
+</div>

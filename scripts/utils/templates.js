@@ -2,7 +2,7 @@ import { MODULE_ID } from "../constants.js";
 
 export async function preloadAqbTemplates() {
   try {
-    const paths = [ // [MODIFIED]
+    const paths = [
       `modules/${MODULE_ID}/templates/dashboard.hbs`,
       `modules/${MODULE_ID}/templates/partials/tab-items.hbs`,
       `modules/${MODULE_ID}/templates/partials/tab-features.hbs`,

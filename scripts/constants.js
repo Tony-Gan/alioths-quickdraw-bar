@@ -14,7 +14,7 @@ export const TABS = [
   { key: "spells", label: "法术" },
   { key: "checks", label: "检定/豁免" },
   { key: "stateMove", label: "状态/移动" },
-  { key: "custom", label: "自定义" }
+  { key: "custom", label: "收藏" }
 ];
 
 export const ABILITIES = [
@@ -76,3 +76,9 @@ export const SKILL_GROUPS = [
     ]
   }
 ];
+
+// 特性按钮自动隐藏名单（在此填写需要隐藏的特性名称）
+// 说明：key 为按钮显示名称（会受重命名影响），value 任意真值即可。
+export const FEATURE_AUTO_HIDE_NAME_MAP = new Map([
+  ["施法", true],
+]);

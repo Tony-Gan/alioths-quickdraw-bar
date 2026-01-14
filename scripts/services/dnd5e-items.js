@@ -25,7 +25,7 @@ function formatItemUses(item) {
   const value = Number(uses?.value ?? 0);
   if (!Number.isFinite(max) || max <= 0) return "";
   const v = Number.isFinite(value) ? value : 0;
-  return `${v}/${max}`;
+  return `${v}`;
 }
 
 function mapItemButton(item) {

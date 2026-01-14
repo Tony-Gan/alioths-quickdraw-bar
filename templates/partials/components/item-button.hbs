@@ -1,4 +1,4 @@
-<button type="button" class="aqb-btn aqb-item-btn" data-aqb-roll="{{roll}}" data-aqb-key="{{key}}" {{#if title}}title="{{title}}"{{/if}} {{#if disabled}}disabled{{/if}}>
+<button type="button" class="aqb-btn aqb-item-btn{{#if favorited}} is-favorited{{/if}}" data-aqb-roll="{{roll}}" data-aqb-key="{{key}}" {{#if title}}title="{{title}}"{{/if}} {{#if disabled}}disabled{{/if}}>
   <span class="aqb-item-icon-wrap">
     {{#if icon}}
       <img class="aqb-item-icon" src="{{icon}}" alt="" />

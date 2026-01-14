@@ -45,7 +45,7 @@
             <h1>{{title}}</h1>
             <div class="aqb-spell-list">
               {{#each spells}}
-                {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="spell" key=id icon=icon label=name infoIcon=prepIcon title=prepTitle disabled=disabled}}
+                {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="spell" key=id icon=icon label=name infoIcon=prepIcon title=prepTitle disabled=disabled favorited=favorited}}
               {{/each}}
             </div>
           </section>

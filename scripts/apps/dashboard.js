@@ -40,13 +40,17 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     this._itemPopoverEl = null;
     this._itemPopoverDismissHandler = null;
     this._itemPopoverEscHandler = null;
+
+    this._itemHoverEl = null;
+    this._itemHoverTimer = null;
+    this._itemHoverBtn = null;
+    this._itemHoverPos = { x: 0, y: 0 };
     
     this._spellsUnpreparedMode = game.settings.get(MODULE_ID, SETTINGS.SPELLS_UNPREPARED_MODE) || "disable";
     this._spellsHideMode = "hide";
     this._itemsSortMode = "type-weapon";
     this._itemsHideMode = "hide";
 
-    this._featuresPassiveMode = "show";
     this._featuresHiddenMode = "hide";
 
     this._handleUpdate = this._onUpdateAny.bind(this);
@@ -54,9 +58,14 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     Hooks.on("updateActor", this._handleUpdate);
     Hooks.on("updateToken", this._handleUpdate);
 
+    Hooks.on("createActiveEffect", this._handleUpdate);
+    Hooks.on("updateActiveEffect", this._handleUpdate);
+    Hooks.on("deleteActiveEffect", this._handleUpdate);
+
     Hooks.on("updateItem", this._handleUpdate);
     Hooks.on("createItem", this._handleUpdate);
     Hooks.on("deleteItem", this._handleUpdate);
+
   }
 
   /* -------------------------------------------- */
@@ -72,7 +81,6 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       this._spellsHideMode,
       this._itemsSortMode,
       this._itemsHideMode,
-      this._featuresPassiveMode,
       this._featuresHiddenMode
     );
 
@@ -104,6 +112,10 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     this.element.addEventListener("change", (ev) => this._handleChange(ev));
     this.element.addEventListener("contextmenu", (ev) => this._handleContextMenu(ev));
 
+    this.element.addEventListener("mousemove", (ev) => this._handleMouseMove(ev));
+    this.element.addEventListener("mouseover", (ev) => this._handleMouseOver(ev));
+    this.element.addEventListener("mouseout", (ev) => this._handleMouseOut(ev));
+
     this.element.addEventListener("wheel", (ev) => this._handleWheel(ev), { passive: false });
   }
 
@@ -111,6 +123,122 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
   async _onRender(context, options) {
     await super._onRender(context, options);
     this._closeItemPopover(); 
+    if (this._itemHoverTimer) window.clearTimeout(this._itemHoverTimer);
+    this._itemHoverTimer = null;
+    this._itemHoverBtn = null;
+    this._closeItemHoverCard();
+  }
+
+  _handleMouseMove(ev) {
+    if (!ev) return;
+    this._itemHoverPos = { x: ev.clientX ?? 0, y: ev.clientY ?? 0 };
+  }
+
+  _handleMouseOver(ev) {
+    const btn = ev?.target?.closest?.("button.aqb-item-btn[data-aqb-key]");
+    if (!(btn instanceof HTMLElement)) return;
+    if (this._itemHoverBtn === btn) return;
+    this._itemHoverBtn = btn;
+
+    if (this._itemHoverTimer) window.clearTimeout(this._itemHoverTimer);
+    this._itemHoverTimer = window.setTimeout(() => {
+      this._itemHoverTimer = null;
+      this._openItemHoverCard(btn);
+    }, 500);
+  }
+
+  _handleMouseOut(ev) {
+    const fromBtn = ev?.target?.closest?.("button.aqb-item-btn[data-aqb-key]");
+    if (!(fromBtn instanceof HTMLElement)) return;
+    if (this._itemHoverBtn !== fromBtn) return;
+    const to = ev?.relatedTarget;
+    if (to instanceof Node && fromBtn.contains(to)) return;
+    if (to instanceof Node && to.closest?.("button.aqb-item-btn[data-aqb-key]") === fromBtn) return;
+
+    if (this._itemHoverTimer) window.clearTimeout(this._itemHoverTimer);
+    this._itemHoverTimer = null;
+    this._itemHoverBtn = null;
+    this._closeItemHoverCard();
+  }
+
+  _closeItemHoverCard() {
+    if (this._itemHoverEl) this._itemHoverEl.remove();
+    this._itemHoverEl = null;
+  }
+
+  _openItemHoverCard(anchorBtn) {
+    const btn = anchorBtn instanceof HTMLElement ? anchorBtn : null;
+    const itemId = btn?.dataset?.aqbKey;
+    if (!btn || !itemId) return;
+
+    const actor = this._getBoundActor();
+    const item = actor?.items?.get?.(itemId) ?? null;
+    if (!item) return;
+
+    const name = getItemName(item) ?? item.name ?? "";
+    const type = String(item?.labels?.type ?? item?.system?.type?.label ?? item?.system?.type?.value ?? item?.type ?? "");
+    const uses = item?.system?.uses ?? {};
+    const max = Number(uses?.max ?? 0);
+    const value = Number(uses?.value ?? 0);
+    const usesText = (Number.isFinite(max) && max > 0) ? `${Number.isFinite(value) ? value : 0}/${max}` : "";
+
+    const descHtml = item?.system?.description?.value ?? item?.system?.description ?? "";
+    const desc = this._stripHtmlToText(descHtml).trim();
+    const descShort = desc.length > 360 ? `${desc.slice(0, 360)}…` : desc;
+
+    if (!this._itemHoverEl) {
+      this._itemHoverEl = document.createElement("div");
+      this._itemHoverEl.classList.add("aqb-item-hovercard");
+      document.body.appendChild(this._itemHoverEl);
+    }
+
+    const esc = foundry.utils.escapeHTML;
+    const icon = String(item?.img ?? "");
+    const requirements = String(item?.labels?.requirements ?? item?.system?.requirements ?? "").trim();
+
+    const tags = [];
+    const equipped = item?.system?.equipped;
+    if (equipped === false) tags.push("NOT EQUIPPED");
+    const proficient = item?.system?.proficient;
+    if (proficient === false) tags.push("NOT PROFICIENT");
+
+    const metaParts = [type, usesText].filter((s) => Boolean(s));
+    const reqHtml = requirements ? `<div class="aqb-item-hovercard-req"><span class="aqb-item-hovercard-req-label">使用要求：</span>${esc(requirements)}</div>` : "";
+    const tagsHtml = tags.length ? `<div class="aqb-item-hovercard-tags">${tags.map((t) => `<span class="aqb-item-hovercard-tag">${esc(t)}</span>`).join("")}</div>` : "";
+    this._itemHoverEl.innerHTML = `
+      <div class="aqb-item-hovercard-head">
+        ${icon ? `<img class="aqb-item-hovercard-icon" src="${esc(icon)}" alt="" />` : ""}
+        <div class="aqb-item-hovercard-head-text">
+          <div class="aqb-item-hovercard-title">${esc(String(name))}</div>
+          ${metaParts.length ? `<div class="aqb-item-hovercard-meta">${esc(metaParts.join(" · "))}</div>` : ""}
+        </div>
+      </div>
+      ${reqHtml}
+      ${descShort ? `<div class="aqb-item-hovercard-desc">${esc(descShort)}</div>` : ""}
+      ${tagsHtml}
+    `;
+
+    const margin = 10;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const rect = this._itemHoverEl.getBoundingClientRect();
+    const pw = rect.width;
+    const ph = rect.height;
+
+    let left = (this._itemHoverPos?.x ?? 0) + 14;
+    let top = (this._itemHoverPos?.y ?? 0) + 14;
+    if (left + pw + margin > vw) left = Math.max(margin, vw - pw - margin);
+    if (top + ph + margin > vh) top = Math.max(margin, (this._itemHoverPos?.y ?? 0) - ph - 14);
+
+    this._itemHoverEl.style.left = `${Math.round(left)}px`;
+    this._itemHoverEl.style.top = `${Math.round(top)}px`;
+  }
+
+  _stripHtmlToText(html) {
+    if (!html) return "";
+    const div = document.createElement("div");
+    div.innerHTML = String(html);
+    return div.textContent ?? "";
   }
 
   /* -------------------------------------------- */
@@ -206,15 +334,21 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const actor = this._getBoundActor();
     const item = actor?.items?.get?.(key) ?? null;
     const isHidden = Boolean(item?.getFlag?.(MODULE_ID, "hidden") ?? item?.flags?.[MODULE_ID]?.hidden);
+    const isFavorited = Boolean(item?.getFlag?.(MODULE_ID, "favorited") ?? item?.flags?.[MODULE_ID]?.favorited);
     const hideMode = (roll === "spell") ? this._spellsHideMode : (this._activeTab === "features" ? this._featuresHiddenMode : this._itemsHideMode);
     const canUnhide = hideMode === "disable" && isHidden;
     const hideAction = canUnhide ? "show" : "hide";
     const hideLabel = canUnhide ? "显示" : "隐藏";
+    const favAction = isFavorited ? "unfavorite" : "favorite";
+    const favLabel = isFavorited ? "取消收藏" : "收藏";
+    const favDisabled = !isFavorited && isHidden;
+    const hideDisabled = !canUnhide && isFavorited;
 
     pop.innerHTML = `
       <button type="button" class="aqb-item-popover-btn" data-aqb-action="rename">重命名</button>
       <button type="button" class="aqb-item-popover-btn" data-aqb-action="reset">重置</button>
-      <button type="button" class="aqb-item-popover-btn" data-aqb-action="${hideAction}">${hideLabel}</button> <!-- [MODIFIED] -->
+      <button type="button" class="aqb-item-popover-btn" data-aqb-action="${favAction}" ${favDisabled ? "disabled" : ""}>${favLabel}</button> <!-- [NEW] -->
+      <button type="button" class="aqb-item-popover-btn" data-aqb-action="${hideAction}" ${hideDisabled ? "disabled" : ""}>${hideLabel}</button> <!-- [MODIFIED] -->
       <button type="button" class="aqb-item-popover-btn" data-aqb-action="view">显示详情</button>
       <button type="button" class="aqb-item-popover-btn" data-aqb-action="chat">发送到聊天</button>
     `;
@@ -242,6 +376,7 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       const actionBtn = ev.target?.closest?.("button[data-aqb-action]");
       const action = actionBtn?.dataset?.aqbAction;
       if (!action) return;
+      if (actionBtn?.disabled) return;
       ev.preventDefault();
       ev.stopPropagation();
       await this._handleItemPopoverAction(action, key, label);
@@ -268,6 +403,8 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     switch (action) {
       case "rename": return this._handleRenameItem(itemId, currentLabel);
       case "reset": return this._handleRefreshItemLabel(itemId);
+      case "favorite": return this._handleFavoriteItem(itemId);
+      case "unfavorite": return this._handleUnfavoriteItem(itemId);
       case "hide": return this._handleMarkItemHidden(itemId);
       case "show": return this._handleUnhideItem(itemId);
       case "view": return this._handleViewItem(itemId);
@@ -402,6 +539,14 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     let doc = args?.[0];
     if (doc?.documentName === "Scene" && args?.[1]?.documentName === "Token") doc = args[1];
 
+    if (doc?.documentName === "ActiveEffect") {
+      const bound = this._getBoundActor();
+      if (!bound) return;
+      const parentActor = (doc.parent?.documentName === "Actor") ? doc.parent : (doc.parent?.parent?.documentName === "Actor" ? doc.parent.parent : null);
+      if (parentActor?.id === bound.id) this._scheduleRerender();
+      return;
+    }
+
     const bound = this._getBoundActor();
     if (!bound) return;
     
@@ -487,6 +632,8 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     if (!actor) return;
     const item = actor.items.get(itemId);
     if (!item) return warn("AQB：未找到该物品。");
+    const isFavorited = Boolean(item?.getFlag?.(MODULE_ID, "favorited") ?? item?.flags?.[MODULE_ID]?.favorited);
+    if (isFavorited) return warn("AQB：已收藏的按钮无法隐藏，请先取消收藏。");
     await item.setFlag(MODULE_ID, "hidden", true);
   }
 
@@ -496,6 +643,24 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const item = actor.items.get(itemId);
     if (!item) return warn("AQB：未找到该物品。");
     await item.unsetFlag(MODULE_ID, "hidden");
+  }
+
+  async _handleFavoriteItem(itemId) {
+    const actor = this._getBoundActor();
+    if (!actor) return;
+    const item = actor.items.get(itemId);
+    if (!item) return warn("AQB：未找到该物品。");
+    const isHidden = Boolean(item?.getFlag?.(MODULE_ID, "hidden") ?? item?.flags?.[MODULE_ID]?.hidden);
+    if (isHidden) return warn("AQB：已隐藏的按钮无法收藏，请先显示。");
+    await item.setFlag(MODULE_ID, "favorited", true);
+  }
+
+  async _handleUnfavoriteItem(itemId) {
+    const actor = this._getBoundActor();
+    if (!actor) return;
+    const item = actor.items.get(itemId);
+    if (!item) return warn("AQB：未找到该物品。");
+    await item.unsetFlag(MODULE_ID, "favorited");
   }
 
   async _handleViewItem(itemId) {
@@ -516,15 +681,30 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     return warn("AQB：当前系统不支持发送到聊天。");
   }
 
-  async _handleInitiative() { await this._safeRun("先攻检定", (actor) => rollInitiativeCheck(actor)); }
+  async _handleInitiative() {
+    await this._safeRun("先攻检定", async (actor) => {
+      const combat = game.combat ?? null;
+      if (!combat) return warn("AQB：当前没有进行中的战斗，无法投掷先攻。请先创建/开始战斗并将角色加入战斗。");
+
+      const token = this._getBoundToken();
+      const tokenId = token?.id ?? null;
+      const combatant = token?.combatant
+        ?? (tokenId ? combat.combatants?.find((c) => c?.tokenId === tokenId) : null)
+        ?? combat.combatants?.find((c) => c?.actorId === actor.id);
+      if (!combatant) return warn("AQB：该角色尚未加入当前战斗，无法投掷先攻。请先将其加入战斗。");
+
+      return rollInitiativeCheck(actor);
+    });
+  }
   async _handleDeathSave() {
     await this._safeRun("死亡豁免", (actor) => {
       const hp = Number(actor?.system?.attributes?.hp?.value ?? NaN);
       const death = actor?.system?.attributes?.death ?? {};
       const success = Number(death?.success ?? 0);
       const failure = Number(death?.failure ?? 0);
-      if (!Number.isFinite(hp) || hp > 0) return null;
-      if (success >= 3 || failure >= 3) return null;
+      if (!Number.isFinite(hp)) return warn("AQB：无法读取生命值，不能进行死亡豁免。");
+      if (hp > 0) return warn("AQB：当前生命值大于 0，不能进行死亡豁免。");
+      if (success >= 3 || failure >= 3) return warn("AQB：死亡豁免已结束（成功或失败已达 3 次），不能继续投掷。");
       return rollDeathSave(actor);
     });
   }
@@ -584,6 +764,7 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
   async _handleStatusToggle(statusId) {
     await this._safeRun("切换状态", async (actor) => {
       await actor.toggleStatusEffect(statusId);
+      this._scheduleRerender();
     });
   }
 
@@ -593,9 +774,11 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       const isActive = tokenDoc?.hasStatusEffect?.(statusId) ?? false;
       if (isActive) {
         await actor.toggleStatusEffect(statusId, { active: false });
+        this._scheduleRerender();
         return;
       }
       await actor.toggleStatusEffect(statusId, { active: true, overlay: true });
+      this._scheduleRerender();
     });
   }
 
@@ -619,6 +802,7 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       const ownerActor = (effect.parent?.documentName === "Actor") ? effect.parent : effect.parent?.parent;
       if (ownerActor?.documentName === "Actor" && ownerActor?.id !== actor.id) return;
       await effect.update({ disabled: !Boolean(effect.disabled) });
+      this._scheduleRerender();
     });
   }
 
@@ -630,6 +814,7 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       const ownerActor = effect.parent;
       if (ownerActor?.id !== actor.id) return;
       await effect.delete();
+      this._scheduleRerender();
     });
   }
 
@@ -659,6 +844,9 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     this._closeItemPopover();
     Hooks.off("updateActor", this._handleUpdate);
     Hooks.off("updateToken", this._handleUpdate);
+    Hooks.off("createActiveEffect", this._handleUpdate);
+    Hooks.off("updateActiveEffect", this._handleUpdate);
+    Hooks.off("deleteActiveEffect", this._handleUpdate);
     Hooks.off("updateItem", this._handleUpdate);
     Hooks.off("createItem", this._handleUpdate);
     Hooks.off("deleteItem", this._handleUpdate);

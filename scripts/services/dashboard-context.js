@@ -1,4 +1,4 @@
-import { TABS, ABILITIES, SKILL_GROUPS, SETTINGS, MODULE_ID } from "../constants.js";
+import { TABS, ABILITIES, SKILL_GROUPS, SETTINGS, MODULE_ID, FEATURE_AUTO_HIDE_NAME_MAP } from "../constants.js";
 import { getOwnedTokensInScene, getDefaultBindableToken, storeLastToken } from "./token-binding.js";
 import { getAbilityCheckBonus, getAbilitySaveBonus, getSkillCheckBonus, getInitiativeBonus, getDeathSaveBonus, formatSigned } from "./dnd5e-modifiers.js";
 import { getSpellSlotsSummary, getActorSpellItems, groupSpellsByLevel, groupSpellsByCastingTime } from "./dnd5e-spells.js"; 
@@ -8,9 +8,10 @@ import { warn } from "../utils/notify.js";
 
 const COMMON_STATUS_DEFS = [
   { statusId: "blinded", label: "目盲", sort: "Blinded" },
+  { statusId: "charmed", label: "魅惑", sort: "Charmed" },
   { statusId: "deafened", label: "耳聋", sort: "Deafened" },
+  { statusId: "frightened", label: "恐慌", sort: "Frightened" },
   { statusId: "grappled", label: "受擒", sort: "Grappled" },
-  { statusId: "hide", label: "隐匿", sort: "Hidden" }, 
   { statusId: "incapacitated", label: "失能", sort: "Incapacitated" },
   { statusId: "invisible", label: "隐形", sort: "Invisible" },
   { statusId: "poisoned", label: "中毒", sort: "Poisoned" },
@@ -33,7 +34,7 @@ const MOVEMENT_ACTION_LABELS_ZH = {
   Blink: "传送" 
 }; 
 
-export async function buildDashboardContext(currentTokenId, activeTab, spellsSortMode, spellsUnpreparedMode, spellsHideMode, itemsSortMode, itemsHideMode, featuresPassiveMode, featuresHiddenMode) {
+export async function buildDashboardContext(currentTokenId, activeTab, spellsSortMode, spellsUnpreparedMode, spellsHideMode, itemsSortMode, itemsHideMode, featuresHiddenMode) {
   const ownedTokens = getOwnedTokensInScene();
   const controlled = canvas?.tokens?.controlled?.[0];
 
@@ -95,12 +96,9 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
     : groupItemsByType(ownedItems, itemsSortMode === "type-consumable" ? "consumable" : "weapon");
 
   const allFeatureButtons = getActorFeatureButtons(actor);
-  const passiveMode = featuresPassiveMode || "show";
   const hiddenMode = (featuresHiddenMode === "disable") ? "disable" : "hide";
 
-  const featureButtonsProcessed = passiveMode === "hide"
-    ? (allFeatureButtons ?? []).filter((f) => !f.isPassive)
-    : (allFeatureButtons ?? []);
+  const featureButtonsProcessed = (allFeatureButtons ?? []);
 
   const unpreparedMode = spellsUnpreparedMode || "disable";
 
@@ -113,12 +111,20 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
     return Boolean(flag);
   };
 
+  const isFlaggedFavorited = (itemId) => {
+    const it = actor?.items?.get?.(itemId);
+    const flag = it?.getFlag?.(MODULE_ID, "favorited") ?? it?.flags?.[MODULE_ID]?.favorited;
+    return Boolean(flag);
+  };
+
   const featureButtonsHiddenProcessed = (featureButtonsProcessed ?? [])
     .map((f) => {
-      const isHidden = isFlaggedHidden(f.id);
+      const autoHidden = FEATURE_AUTO_HIDE_NAME_MAP.has(f.name);
+      const isHidden = isFlaggedHidden(f.id) || autoHidden;
       if (isHidden && hiddenMode === "hide") return null;
       return {
         ...f,
+        favorited: isFlaggedFavorited(f.id),
         disabled: Boolean(f.disabled) || (isHidden && hiddenMode === "disable")
       };
     })
@@ -133,6 +139,7 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
           if (isHidden && safeSpellsHideMode === "hide") return null;
           return {
             ...s,
+            favorited: isFlaggedFavorited(s.id),
             disabled: (unpreparedMode === "disable" && s.prepState === "unprepared") || (isHidden && safeSpellsHideMode === "disable")
           };
         })
@@ -149,6 +156,7 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
           if (isHidden && safeItemsHideMode === "hide") return null;
           return {
             ...it,
+            favorited: isFlaggedFavorited(it.id),
             disabled: Boolean(it.disabled) || (isHidden && safeItemsHideMode === "disable")
           };
         })
@@ -156,6 +164,28 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
       return { ...section, items };
     })
     .filter((section) => (section.items?.length ?? 0) > 0);
+
+  const favoriteItems = (itemSectionsRaw ?? [])
+    .flatMap((section) => (section.items ?? []))
+    .filter((it) => isFlaggedFavorited(it.id));
+
+  const favoriteFeatures = (featureButtonsProcessed ?? [])
+    .filter((f) => isFlaggedFavorited(f.id));
+
+  const favoriteSpells = (spellSections ?? [])
+    .flatMap((section) => (section.spells ?? []))
+    .filter((s) => isFlaggedFavorited(s.id))
+    .map((s) => {
+      const isHidden = isFlaggedHidden(s.id);
+      const unprepared = s.prepState === "unprepared";
+      const disabled = (unprepared && unpreparedMode !== "ignore") || (isHidden && safeSpellsHideMode === "disable");
+      return { ...s, disabled };
+    });
+
+  const hasFavoriteItems = (favoriteItems?.length ?? 0) > 0;
+  const hasFavoriteFeatures = (favoriteFeatures?.length ?? 0) > 0;
+  const hasFavoriteSpells = (favoriteSpells?.length ?? 0) > 0;
+  const hasFavorites = hasFavoriteItems || hasFavoriteFeatures || hasFavoriteSpells;
 
   const spellsSortModes = [
     { value: "level", label: "按环位", selected: spellsSortMode === "level" },
@@ -171,11 +201,6 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
   const itemsHideModes = [
     { value: "hide", label: "隐藏", selected: safeItemsHideMode === "hide" },
     { value: "disable", label: "显示", selected: safeItemsHideMode === "disable" }
-  ];
-
-  const featuresPassiveModes = [
-    { value: "show", label: "显示", selected: passiveMode === "show" },
-    { value: "hide", label: "隐藏", selected: passiveMode === "hide" }
   ];
 
   const featuresHiddenModes = [
@@ -243,7 +268,6 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
     initiativeMod,
     deathSaveMod,
 
-    featuresPassiveModes,
     featuresHiddenModes,
     featureItems: featureButtonsHiddenProcessed,
     hasFeatureItems: (featureButtonsHiddenProcessed?.length ?? 0) > 0,
@@ -256,6 +280,14 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
     spellSections: spellSectionsProcessed,
     hasSpellSections: (spellSectionsProcessed?.length ?? 0) > 0,
 
+    favoriteItems,
+    favoriteFeatures,
+    favoriteSpells,
+    hasFavorites,
+    hasFavoriteItems,
+    hasFavoriteFeatures,
+    hasFavoriteSpells,
+
     itemsSortModes,
     itemsHideModes,
     itemSections: itemSectionsProcessed,
@@ -265,14 +297,37 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
 
 function buildCommonStatusButtons(boundToken, buttonsDisabled) {
   const tokenDoc = boundToken?.document ?? null;
+  const actor = boundToken?.actor ?? null;
   const statusEffects = Array.isArray(CONFIG?.statusEffects) ? CONFIG.statusEffects : [];
 
-  const hasStatus = (id) => {
+  const hasTokenStatus = (id) => {
     if (!id) return false;
     if (typeof tokenDoc?.hasStatusEffect === "function") return Boolean(tokenDoc.hasStatusEffect(id));
     const statuses = tokenDoc?.statuses;
     if (statuses instanceof Set) return statuses.has(id);
     if (Array.isArray(statuses)) return statuses.includes(id);
+    return false;
+  };
+
+  const hasActorStatus = (id) => {
+    if (!id || !actor) return false;
+
+    const actorStatuses = actor?.statuses;
+    if (actorStatuses instanceof Set && actorStatuses.has(id)) return true;
+    if (Array.isArray(actorStatuses) && actorStatuses.includes(id)) return true;
+
+    const effects = Array.isArray(actor.appliedEffects) ? actor.appliedEffects : (actor.effects?.contents ?? []);
+    for (const e of effects) {
+      if (!e || e.isSuppressed || e.disabled) continue;
+      const statuses = e.statuses;
+      if (!(statuses instanceof Set)) continue;
+      for (const s of statuses) {
+        const sid = String(s ?? "");
+        if (!sid) continue;
+        if (sid === id) return true;
+        if (typeof id === "string" && sid.endsWith(`.${id}`)) return true;
+      }
+    }
     return false;
   };
 
@@ -299,7 +354,7 @@ function buildCommonStatusButtons(boundToken, buttonsDisabled) {
         statusId: s.statusId,
         label: s.label,
         icon: cfg?.img ?? cfg?.icon ?? "",
-        toggled: idsToCheck.some((id) => hasStatus(id)),
+        toggled: idsToCheck.some((id) => hasTokenStatus(id) || hasActorStatus(id)), 
         disabled: Boolean(buttonsDisabled)
       };
     });
@@ -309,15 +364,39 @@ function buildExtraStatusButtons(actor, buttonsDisabled) {
   if (!actor) return [];
 
   const commonSet = new Set(COMMON_STATUS_IDS);
-  const effects = Array.isArray(actor.appliedEffects) ? actor.appliedEffects : (actor.effects?.contents ?? []);
+  const excludedStatusIds = new Set(["hide", "hidden"]);
+  const appliedEffects = Array.isArray(actor.appliedEffects) ? actor.appliedEffects : [];
+  const appliedUuids = new Set(appliedEffects.map((e) => e?.uuid).filter(Boolean));
+  const actorEffects = (actor.effects?.contents ?? []);
 
-  return effects
+  const effectPool = [];
+  for (const e of actorEffects) effectPool.push(e);
+
+  for (const it of (actor.items?.contents ?? [])) {
+    const itemEffects = it?.effects?.contents ?? [];
+    for (const e of itemEffects) {
+      const uuid = e?.uuid;
+      if (!uuid) continue;
+      if (appliedUuids.has(uuid) || Boolean(e.disabled)) effectPool.push(e);
+    }
+  }
+
+  const seen = new Set();
+
+  return effectPool
     .filter((e) => {
+      if (!e || !e.uuid) return false;
+      if (seen.has(e.uuid)) return false;
+      seen.add(e.uuid);
       if (e?.isSuppressed) return false;
       const statuses = e?.statuses;
       if (!(statuses instanceof Set)) return true;
       for (const s of statuses) {
-        if (commonSet.has(String(s))) return false;
+        const sid = String(s ?? "");
+        if (!sid) continue;
+        const suffix = sid.includes(".") ? sid.split(".").pop() : sid;
+        if (excludedStatusIds.has(suffix)) return false;
+        if (commonSet.has(suffix)) return false;
       }
       return true;
     })
@@ -326,7 +405,7 @@ function buildExtraStatusButtons(actor, buttonsDisabled) {
       effectId: e.id,
       label: e.name ?? "",
       icon: e.img ?? e.icon ?? e.parent?.img ?? "",
-      toggled: !Boolean(e.disabled),
+      toggled: !Boolean(e.disabled) && !Boolean(e.isSuppressed),
       disabled: Boolean(buttonsDisabled)
     }))
     .sort((a, b) => (a.label || "").localeCompare((b.label || "")));

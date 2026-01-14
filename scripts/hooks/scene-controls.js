@@ -5,8 +5,6 @@ const TOOL_ID = "aqb-open";
 
 export function registerSceneControls() {
   Hooks.on("getSceneControlButtons", (controls) => {
-    if (!game.user.isTrusted) return;
-
     const tokenControls = controls.tokens;
     if (!tokenControls) return;
 

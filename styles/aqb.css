@@ -315,6 +315,11 @@
   gap: 6px;
 }
 
+.aqb-app .aqb-item-btn.is-favorited {
+  border-color: #d4af37;
+  box-shadow: 0 0 0 1px #d4af37 inset;
+}
+
 .aqb-app .aqb-item-icon-wrap {
   display: flex;
   align-items: center;
@@ -344,7 +349,7 @@
 }
 
 .aqb-app .aqb-item-main {
-  flex: 1 1 60%;
+  flex: 1 1 65%;
   text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -361,18 +366,97 @@
 
 .aqb-app .aqb-item-right {
   opacity: 0.9;
-  flex: 0 1 20%;
-  max-width: 20%;
+  flex: 0 1 15%;
+  max-width: 15%;
   font-size: 0.9em;
   display: flex;
   align-items: center;
   min-width: 36px;
   min-width: 0;
-  justify-content: flex-end;
+  justify-content: center;
+  text-align: center;
   font-family: var(--font-monospace);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.aqb-item-hovercard {
+  position: fixed;
+  z-index: 10001;
+  max-width: 320px;
+  padding: 8px;
+  border: 1px solid var(--aqb-border-main);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.22);
+  color: var(--aqb-text-primary);
+  pointer-events: none;
+}
+
+.theme-dark .aqb-item-hovercard,
+body.theme-dark .aqb-item-hovercard {
+  background: var(--aqb-bg-panel);
+}
+
+.aqb-item-hovercard-title {
+  font-weight: 700;
+  margin-bottom: 4px;
+  line-height: 1.1;
+}
+
+.aqb-item-hovercard-meta {
+  font-size: 0.9em;
+  opacity: 0.8;
+  margin-bottom: 6px;
+}
+
+.aqb-item-hovercard-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.aqb-item-hovercard-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex: 0 0 auto;
+}
+
+.aqb-item-hovercard-head-text {
+  min-width: 0;
+}
+
+.aqb-item-hovercard-req {
+  font-size: 0.9em;
+  opacity: 0.85;
+  margin-bottom: 6px;
+}
+
+.aqb-item-hovercard-tags {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.aqb-item-hovercard-tag {
+  font-size: 0.75em;
+  padding: 2px 6px;
+  border: 1px solid var(--aqb-border-main);
+  border-radius: 6px;
+  opacity: 0.9;
+}
+
+.aqb-item-hovercard-desc {
+  font-size: 0.95em;
+  opacity: 0.95;
+  line-height: 1.25;
+  max-height: 160px;
+  overflow: hidden;
 }
 
 /* --- Item Popover (右键浮窗) --- */
@@ -515,7 +599,6 @@ body.theme-dark .aqb-item-popover {
   gap: 10px;
 }
 
-.aqb-features-passive,
 .aqb-features-hidden {
   display: flex;
   align-items: center;
