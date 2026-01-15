@@ -35,7 +35,10 @@ function isSaveProficient(actor, abilityId) {
 
 function getSkillTotalMod(actor, skillId) {
   const sk = actor?.system?.skills?.[skillId];
+  if (isNumber(sk?.total)) return sk.total;
+  if (isNumber(sk?.check?.total)) return sk.check.total;
   if (isNumber(sk?.mod)) return sk.mod;
+  if (isNumber(sk?.check?.mod)) return sk.check.mod;
   return null;
 }
 

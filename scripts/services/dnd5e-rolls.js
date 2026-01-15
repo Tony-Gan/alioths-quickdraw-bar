@@ -1,6 +1,9 @@
 function isCancelError(err) {
   if (!err) return false;
   const msg = String(err?.message ?? err);
+  const stack = String(err?.stack ?? "");
+  const isMidiDialogCloseBug = /Cannot read properties of null \(reading ['"]0['"]\)/i.test(msg) && /abilityCheck\.js|doRollAbility|rollAbilityCheck/i.test(stack);
+  if (isMidiDialogCloseBug) return true;
   return /cancel|canceled|cancelled|aborted|dismissed|closed|dialog|对话框|no roll|no result|未掷骰|没有掷骰|未进行|用户取消|已取消|已关闭/i.test(msg) || msg.trim() === "";
 }
 
@@ -8,7 +11,19 @@ function buildFastForwardEvent(rollMode) {
   const mode = String(rollMode ?? "normal").toLowerCase();
   const advantage = ["adv", "advantage", "a", "+"].includes(mode);
   const disadvantage = ["dis", "disadv", "disadvantage", "d", "-"].includes(mode);
-  return { shiftKey: true, altKey: advantage, ctrlKey: disadvantage, metaKey: false };
+  const domTarget = (typeof document !== "undefined" && document?.body) ? document.body : null;
+  const safeTarget = (domTarget instanceof Element) ? domTarget : { closest: () => null };
+  return {
+    shiftKey: true,
+    altKey: advantage,
+    ctrlKey: disadvantage,
+    metaKey: false,
+    target: safeTarget,
+    currentTarget: safeTarget,
+    preventDefault: () => {},
+    stopPropagation: () => {},
+    stopImmediatePropagation: () => {}
+  };
 }
 
 async function fastForwardCall(callers) {

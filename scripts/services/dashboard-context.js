@@ -111,12 +111,13 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
     : groupSpellsByLevel(spellItems, actor);
 
   const ownedItems = getActorOwnedItemDocuments(actor);
-  const itemSectionsRaw = itemsSortMode === "time"
+  const safeItemsSortMode = (itemsSortMode === "type-weapon" || itemsSortMode === "type-consumable" || itemsSortMode === "time") ? itemsSortMode : "time";
+  const itemSectionsRaw = safeItemsSortMode === "time"
     ? groupItemsByUseTime(ownedItems)
-    : groupItemsByType(ownedItems, itemsSortMode === "type-consumable" ? "consumable" : "weapon");
+    : groupItemsByType(ownedItems, safeItemsSortMode === "type-consumable" ? "consumable" : "weapon");
 
   const allFeatureButtons = getActorFeatureButtons(actor);
-  const safeFeaturesSortMode = (featuresSortMode === "time") ? "time" : "default";
+  const safeFeaturesSortMode = (featuresSortMode === "default" || featuresSortMode === "time") ? featuresSortMode : "time";
   const hiddenMode = (featuresHiddenMode === "disable") ? "disable" : "hide";
 
   const featureButtonsProcessed = (allFeatureButtons ?? []);
@@ -228,9 +229,9 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
   ];
 
   const itemsSortModes = [
-    { value: "type-weapon", label: "按类型/武器优先", selected: (itemsSortMode ?? "type-weapon") === "type-weapon" },
-    { value: "type-consumable", label: "按类型/消耗品优先", selected: itemsSortMode === "type-consumable" },
-    { value: "time", label: "按使用时间", selected: itemsSortMode === "time" }
+    { value: "type-weapon", label: "按类型/武器优先", selected: safeItemsSortMode === "type-weapon" },
+    { value: "type-consumable", label: "按类型/消耗品优先", selected: safeItemsSortMode === "type-consumable" },
+    { value: "time", label: "按释放时间", selected: safeItemsSortMode === "time" }
   ];
 
   const itemsHideModes = [
@@ -244,7 +245,7 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
   ];
 
   const featuresSortModes = [
-    { value: "default", label: "默认", selected: safeFeaturesSortMode === "default" },
+    { value: "default", label: "按类型", selected: safeFeaturesSortMode === "default" },
     { value: "time", label: "按释放时间", selected: safeFeaturesSortMode === "time" }
   ];
 

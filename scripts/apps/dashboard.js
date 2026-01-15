@@ -18,8 +18,8 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       resizable: true
     },
     position: {
-      width: Math.max(800, Math.floor(window.innerWidth / 2)),
-      height: 300
+      width: Math.max(1010, Math.floor(window.innerWidth / 2)),
+      height: 270
     }
   }, { inplace: false });
 
@@ -40,6 +40,9 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     this._itemPopoverEl = null;
     this._itemPopoverDismissHandler = null;
     this._itemPopoverEscHandler = null;
+    this._splitRollPopoverEl = null;
+    this._splitRollPopoverDismissHandler = null;
+    this._splitRollPopoverEscHandler = null;
 
     this._itemHoverEl = null;
     this._itemHoverTimer = null;
@@ -51,11 +54,11 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     
     this._spellsUnpreparedMode = game.settings.get(MODULE_ID, SETTINGS.SPELLS_UNPREPARED_MODE) || "disable";
     this._spellsHideMode = "hide";
-    this._itemsSortMode = "type-weapon";
+    this._itemsSortMode = "time";
     this._itemsHideMode = "hide";
 
     this._featuresHiddenMode = "hide";
-    this._featuresSortMode = "default";
+    this._featuresSortMode = "time";
 
     this._handleUpdate = this._onUpdateAny.bind(this);
     this._handleControlToken = this._onControlToken.bind(this);
@@ -129,6 +132,7 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
   async _onRender(context, options) {
     await super._onRender(context, options);
     this._closeItemPopover();
+    this._closeSplitRollPopover();
     if (this._itemHoverTimer) window.clearTimeout(this._itemHoverTimer);
     this._itemHoverTimer = null;
     this._itemHoverBtn = null;
@@ -151,7 +155,7 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     this._itemHoverTimer = window.setTimeout(() => {
       this._itemHoverTimer = null;
       this._openItemHoverCard(btn);
-    }, 500);
+    }, 1000);
   }
 
   _handleMouseOut(ev) {
@@ -256,6 +260,22 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     if (this._sortState?.dragging) return;
     const target = ev.target;
     if (!target) return;
+
+    const splitBtn = target.closest?.("button.aqb-split2-btn[data-aqb-roll]");
+    if (splitBtn) {
+      if (splitBtn?.disabled) return;
+      const roll = splitBtn.dataset?.aqbRoll;
+      const key = splitBtn.dataset?.aqbKey || null;
+      const excluded = ["hit-dice", "short-rest", "long-rest"].includes(String(roll ?? ""));
+      const fastCapable = ["initiative", "ability-check", "ability-save", "skill"].includes(String(roll ?? ""));
+      if (fastCapable && !excluded) {
+        ev.preventDefault();
+        ev.stopImmediatePropagation?.();
+        ev.stopPropagation();
+        this._openSplitRollPopover(splitBtn);
+        return;
+      }
+    }
 
     const btn = target.closest?.("[data-aqb-roll][data-aqb-key]");
     if (!btn) return;
@@ -410,7 +430,7 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     st.placeholder = ph;
     st.container.insertBefore(ph, el.nextSibling);
 
-    document.body.appendChild(el);
+    this.element.appendChild(el);
     el.classList.add("aqb-sort-dragging");
     el.style.left = `${Math.round(rect.left)}px`;
     el.style.top = `${Math.round(rect.top)}px`;
@@ -529,6 +549,93 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     this._sortState = null;
     this._suppressNextClick = true;
+    window.setTimeout(() => { this._suppressNextClick = false; }, 50);
+  }
+
+
+  _closeSplitRollPopover() {
+    const pop = this._splitRollPopoverEl;
+    if (pop) {
+      pop.classList.remove("is-open");
+      pop.classList.add("is-closing");
+      window.setTimeout(() => pop.remove(), 220);
+    }
+    this._splitRollPopoverEl = null;
+    if (this._splitRollPopoverDismissHandler) document.removeEventListener("mousedown", this._splitRollPopoverDismissHandler, true);
+    if (this._splitRollPopoverEscHandler) document.removeEventListener("keydown", this._splitRollPopoverEscHandler, true);
+    this._splitRollPopoverDismissHandler = null;
+    this._splitRollPopoverEscHandler = null;
+  }
+
+  _openSplitRollPopover(anchorBtn) {
+    const btn = anchorBtn instanceof HTMLElement ? anchorBtn : null;
+    const roll = btn?.dataset?.aqbRoll;
+    const key = btn?.dataset?.aqbKey || null;
+    if (!btn || !roll) return;
+
+    const excluded = ["hit-dice", "short-rest", "long-rest"].includes(String(roll ?? ""));
+    const fastCapable = ["initiative", "ability-check", "ability-save", "skill"].includes(String(roll ?? ""));
+    if (excluded || !fastCapable) return;
+
+    this._closeItemPopover();
+    this._closeSplitRollPopover();
+
+    const pop = document.createElement("div");
+    pop.classList.add("aqb-item-popover");
+    pop.dataset.aqbRoll = roll;
+    pop.dataset.aqbKey = key ?? "";
+
+    pop.innerHTML = `
+      <button type="button" class="aqb-btn aqb-item-popover-btn" data-aqb-roll-mode="normal">直接掷骰</button>
+      <button type="button" class="aqb-btn aqb-item-popover-btn" data-aqb-roll-mode="advantage">优势掷骰</button>
+      <button type="button" class="aqb-btn aqb-item-popover-btn" data-aqb-roll-mode="disadvantage">劣势掷骰</button>
+    `;
+
+    pop.style.visibility = "hidden";
+    document.body.appendChild(pop);
+
+    const rect = btn.getBoundingClientRect();
+    const margin = 6;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const pw = pop.offsetWidth;
+    const ph = pop.offsetHeight;
+
+    let left = rect.left;
+    let top = rect.bottom + margin;
+    if (left + pw + margin > vw) left = Math.max(margin, vw - pw - margin);
+    if (top + ph + margin > vh) top = Math.max(margin, rect.top - ph - margin);
+
+    pop.style.left = `${Math.round(left)}px`;
+    pop.style.top = `${Math.round(top)}px`;
+    pop.style.visibility = "";
+    requestAnimationFrame(() => pop.classList.add("is-open"));
+
+    pop.addEventListener("click", async (ev) => {
+      const modeBtn = ev.target?.closest?.("button[data-aqb-roll-mode]");
+      const rollMode = modeBtn?.dataset?.aqbRollMode;
+      if (!rollMode) return;
+      if (modeBtn?.disabled) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      this._closeSplitRollPopover();
+      await this._dispatchRollFast(roll, key, rollMode);
+    });
+
+    this._splitRollPopoverDismissHandler = (ev) => {
+      const t = ev?.target;
+      if (!(t instanceof Node)) return;
+      if (pop.contains(t) || btn.contains(t)) return;
+      this._closeSplitRollPopover();
+    };
+    document.addEventListener("mousedown", this._splitRollPopoverDismissHandler, true);
+
+    this._splitRollPopoverEscHandler = (ev) => {
+      if (ev?.key === "Escape") this._closeSplitRollPopover();
+    };
+    document.addEventListener("keydown", this._splitRollPopoverEscHandler, true);
+
+    this._splitRollPopoverEl = pop;
   }
 
   _closeItemPopover() {
@@ -552,6 +659,7 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     if (!btn || !key || !roll) return;
 
     this._closeItemPopover();
+    this._closeSplitRollPopover();
 
     const label = btn.querySelector?.(".aqb-item-main")?.textContent ?? "";
     const pop = document.createElement("div");
@@ -677,14 +785,6 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       ev.preventDefault();
       const action = rollBtn.dataset?.aqbRoll;
       const key = rollBtn.dataset?.aqbKey;
-      const isSplit = Boolean(realBtn?.classList?.contains("aqb-split2-btn"));
-      const excluded = ["death-save", "short-rest", "long-rest"].includes(String(action ?? ""));
-      const hasQuickMod = Boolean(ev.shiftKey || ev.altKey || ev.ctrlKey);
-      const fastCapable = ["initiative", "ability-check", "ability-save", "skill"].includes(String(action ?? ""));
-      if (isSplit && !excluded && hasQuickMod && fastCapable) {
-        const rollMode = (ev.altKey && !ev.ctrlKey) ? "advantage" : ((ev.ctrlKey && !ev.altKey) ? "disadvantage" : "normal");
-        return this._dispatchRollFast(action, key, rollMode);
-      }
       return this._dispatchRoll(action, key);
     }
   }
@@ -729,7 +829,7 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     // 所持物排序
     if (target.matches("select[data-aqb-items-sort]")) {
-      this._itemsSortMode = target.value || "type-weapon";
+      this._itemsSortMode = target.value || "time";
       this.render(false);
       return;
     }
@@ -748,9 +848,9 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       return;
     }
 
-    // 特性排序（默认 / 按释放时间）
+    // 特性排序（按类型 / 按释放时间）
     if (target.matches("select[data-aqb-features-sort]")) {
-      this._featuresSortMode = target.value || "default";
+      this._featuresSortMode = target.value || "time";
       this.render(false);
       return;
     }
@@ -1147,13 +1247,13 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   _applyDefaultBottomPosition() {
-    const desiredWidth = Math.max(800, Math.floor(window.innerWidth / 2));
+    const desiredWidth = Math.max(1010, Math.floor(window.innerWidth / 2));
     const padding = 10;
     const width = Math.min(desiredWidth, window.innerWidth - padding * 2);
     const defaultHeight = (typeof this.position?.height === "number") ? this.position.height : 300;
     const height = Math.min(defaultHeight, window.innerHeight - padding * 2); 
     const left = Math.max(padding, Math.floor((window.innerWidth - width) / 2));
-    const top = Math.max(padding, Math.floor(window.innerHeight - height));
+    const top = Math.max(padding, Math.floor(window.innerHeight - height - padding));
     this.setPosition({ left, top, width, height });
   }
 
