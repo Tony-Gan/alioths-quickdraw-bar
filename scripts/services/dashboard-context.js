@@ -104,10 +104,11 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
   const deathSaveMod = formatSigned(getDeathSaveBonus(actor));
 
   const spellSlotsSummary = getSpellSlotsSummary(actor);
+  const showSpellSlotsSummary = spellsSortMode === "time";
   const spellItems = getActorSpellItems(actor);
   const spellSections = spellsSortMode === "time" 
     ? groupSpellsByCastingTime(spellItems) 
-    : groupSpellsByLevel(spellItems);
+    : groupSpellsByLevel(spellItems, actor);
 
   const ownedItems = getActorOwnedItemDocuments(actor);
   const itemSectionsRaw = itemsSortMode === "time"
@@ -328,6 +329,7 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
     hasFeatureItems: (featureItems?.length ?? 0) > 0,
 
     spellSlotsSummary,
+    showSpellSlotsSummary,
     spellsSortModes,
     spellsUnpreparedModes,
     spellsHideModes,

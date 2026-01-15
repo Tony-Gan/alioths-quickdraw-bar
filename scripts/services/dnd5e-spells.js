@@ -13,6 +13,18 @@ const LEVEL_TITLES = [
   "九环"
 ];
 
+function buildSlotSquares(value, max) {
+  const m = Math.max(0, Number(max ?? 0));
+  if (m <= 0) return "";
+  const v = Math.max(0, Math.min(Number(value ?? 0), m));
+  return "■".repeat(v) + "□".repeat(Math.max(0, m - v));
+}
+
+function buildSlotSpan(squares, cls) {
+  if (!squares) return "";
+  return `<span class="${cls}">${squares}</span>`;
+}
+
 export function getSpellSlotsSummary(actor) {
   if (!actor) return "法术位：—";
   const spells = actor.system?.spells ?? {};
@@ -62,7 +74,7 @@ export function getSpellPreparationIcon(state) {
   }
 }
 
-export function groupSpellsByLevel(spells) {
+export function groupSpellsByLevel(spells, actor) {
   const buckets = new Map();
   for (const s of spells) {
     const lvl = Number(s?.system?.level ?? 0);
@@ -72,10 +84,34 @@ export function groupSpellsByLevel(spells) {
 
   const levels = [...buckets.keys()].sort((a, b) => a - b);
   const sections = [];
+  const spellData = actor?.system?.spells ?? {};
+  const pact = spellData?.pact;
+  const pactMax = Number(pact?.max ?? 0);
+  const pactValue = Number(pact?.value ?? 0);
+
   for (const lvl of levels) {
     const list = buckets.get(lvl) ?? [];
     if (!list.length) continue;
-    const title = LEVEL_TITLES[lvl] ?? `${lvl}环`;
+    let title = LEVEL_TITLES[lvl] ?? `${lvl}环`;
+
+    if (lvl > 0) {
+      const parts = [];
+
+      const normal = spellData?.[`spell${lvl}`];
+      const normalMax = Number(normal?.max ?? 0);
+      const normalValue = Number(normal?.value ?? 0);
+      if (normalMax > 0) {
+        const squares = buildSlotSquares(normalValue, normalMax);
+        parts.push(buildSlotSpan(squares, "aqb-spell-slot-normal"));
+      }
+
+      if (pactMax > 0) {
+        const squares = buildSlotSquares(pactValue, pactMax);
+        parts.push(buildSlotSpan(squares, "aqb-spell-slot-pact"));
+      }
+
+      if (parts.length) title = `${title} | ${parts.join(" | ")}`;
+    }
     
     const spellsMapped = list
       .slice()

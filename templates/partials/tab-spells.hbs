@@ -1,6 +1,8 @@
 <div class="aqb-spells">
   <div class="aqb-spells-top">
-    <p class="aqb-spells-slots">{{spellSlotsSummary}}</p>
+    {{#if showSpellSlotsSummary}}
+      <p class="aqb-spells-slots">{{spellSlotsSummary}}</p>
+    {{/if}}
   </div>
 
   {{#if buttonsDisabled}}
@@ -13,10 +15,10 @@
       {{#if hasSpellSections}}
         {{#each spellSections}}
           <section class="aqb-section aqb-spell-section">
-            <h1>{{title}}</h1>
+            <h1>{{{title}}}</h1>
             <div class="aqb-spell-list" data-aqb-sort-container="{{sortKey}}">
               {{#each spells}}
-                {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="spell" key=id icon=icon label=name infoIcon=prepIcon title=prepTitle disabled=disabled favorited=favorited sortSection=../sortKey}} <!-- // [MODIFIED] -->
+                {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="spell" key=id icon=icon label=name infoIcon=prepIcon title=prepTitle disabled=disabled favorited=favorited sortSection=../sortKey}}
               {{/each}}
             </div>
           </section>
