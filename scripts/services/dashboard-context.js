@@ -52,6 +52,25 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
   const actor = boundToken?.actor ?? null;
   const buttonsDisabled = !actor;
   const genericIcon = "icons/svg/d20-black.svg";
+
+  const sortOrders = actor?.getFlag?.(MODULE_ID, "sortOrders") ?? actor?.flags?.[MODULE_ID]?.sortOrders ?? {};
+  const getManualOrder = (sortKey) => {
+    const v = sortOrders?.[sortKey];
+    return Array.isArray(v) ? v : [];
+  };
+  const applyManualOrder = (list, orderIds, getId = (x) => x?.id) => {
+    const arr = Array.isArray(list) ? list.slice() : [];
+    const order = Array.isArray(orderIds) ? orderIds : [];
+    if (!order.length || arr.length <= 1) return arr;
+    const idx = new Map(order.map((id, i) => [String(id), i]));
+    const withPos = arr.map((it, i) => {
+      const id = String(getId(it) ?? "");
+      const p = idx.has(id) ? idx.get(id) : (order.length + i);
+      return { it, p, i };
+    });
+    withPos.sort((a, b) => (a.p - b.p) || (a.i - b.i));
+    return withPos.map((x) => x.it);
+  };
   
   const abilityChecks = ABILITIES.map((a) => ({
     id: a.id,
@@ -131,9 +150,13 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
     })
     .filter((f) => Boolean(f));
 
+  const featureItemsSortKey = "features:all";
+  const featureItems = applyManualOrder(featureButtonsHiddenProcessed, getManualOrder(featureItemsSortKey));
+
   const spellSectionsProcessed = (spellSections ?? [])
     .map((section) => {
-      const spells = (section.spells ?? [])
+      const sortKey = `spells:${section.key ?? section.title ?? ""}`;
+      const spellsRaw = (section.spells ?? [])
         .filter((s) => unpreparedMode !== "hide" || s.prepState !== "unprepared")
         .map((s) => {
           const isHidden = isFlaggedHidden(s.id);
@@ -145,13 +168,15 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
           };
         })
         .filter((s) => Boolean(s));
-      return { ...section, spells };
+      const spells = applyManualOrder(spellsRaw, getManualOrder(sortKey));
+      return { ...section, sortKey, spells };
     })
     .filter((section) => (section.spells?.length ?? 0) > 0);
 
   const itemSectionsProcessed = (itemSectionsRaw ?? [])
     .map((section) => {
-      const items = (section.items ?? [])
+      const sortKey = `items:${section.key ?? section.title ?? ""}`;
+      const itemsRaw = (section.items ?? [])
         .map((it) => {
           const isHidden = isFlaggedHidden(it.id);
           if (isHidden && safeItemsHideMode === "hide") return null;
@@ -162,18 +187,25 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
           };
         })
         .filter((it) => Boolean(it));
-      return { ...section, items };
+      const items = applyManualOrder(itemsRaw, getManualOrder(sortKey));
+      return { ...section, sortKey, items };
     })
     .filter((section) => (section.items?.length ?? 0) > 0);
 
-  const favoriteItems = (itemSectionsRaw ?? [])
+  const favoriteItemsSortKey = "favorites:items";
+  const favoriteFeaturesSortKey = "favorites:features";
+  const favoriteSpellsSortKey = "favorites:spells";
+
+  const favoriteItemsRaw = (itemSectionsRaw ?? [])
     .flatMap((section) => (section.items ?? []))
     .filter((it) => isFlaggedFavorited(it.id));
+  const favoriteItems = applyManualOrder(favoriteItemsRaw, getManualOrder(favoriteItemsSortKey));
 
-  const favoriteFeatures = (featureButtonsProcessed ?? [])
+  const favoriteFeaturesRaw = (featureButtonsProcessed ?? [])
     .filter((f) => isFlaggedFavorited(f.id));
+  const favoriteFeatures = applyManualOrder(favoriteFeaturesRaw, getManualOrder(favoriteFeaturesSortKey));
 
-  const favoriteSpells = (spellSections ?? [])
+  const favoriteSpellsRaw = (spellSections ?? [])
     .flatMap((section) => (section.spells ?? []))
     .filter((s) => isFlaggedFavorited(s.id))
     .map((s) => {
@@ -182,6 +214,7 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
       const disabled = (unprepared && unpreparedMode !== "ignore") || (isHidden && safeSpellsHideMode === "disable");
       return { ...s, disabled };
     });
+  const favoriteSpells = applyManualOrder(favoriteSpellsRaw, getManualOrder(favoriteSpellsSortKey));
 
   const hasFavoriteItems = (favoriteItems?.length ?? 0) > 0;
   const hasFavoriteFeatures = (favoriteFeatures?.length ?? 0) > 0;
@@ -214,9 +247,17 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
     { value: "time", label: "按释放时间", selected: safeFeaturesSortMode === "time" }
   ];
 
-  const featureSections = (safeFeaturesSortMode === "time")
-    ? groupFeatureButtonsByUseTime(featureButtonsHiddenProcessed)
+  const featureSectionsRaw = (safeFeaturesSortMode === "time")
+    ? groupFeatureButtonsByUseTime(featureItems)
     : [];
+
+  const featureSections = (featureSectionsRaw ?? [])
+    .map((section) => {
+      const sortKey = `features:${section.key ?? section.title ?? ""}`;
+      const items = applyManualOrder(section.items ?? [], getManualOrder(sortKey));
+      return { ...section, sortKey, items };
+    })
+    .filter((section) => (section.items?.length ?? 0) > 0);
 
   const spellsHideModes = [
     { value: "hide", label: "隐藏", selected: safeSpellsHideMode === "hide" },
@@ -282,8 +323,9 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
     featuresSortModes,
     featureSections,
     hasFeatureSections: (featureSections?.length ?? 0) > 0,
-    featureItems: featureButtonsHiddenProcessed,
-    hasFeatureItems: (featureButtonsHiddenProcessed?.length ?? 0) > 0,
+    featureItemsSortKey, 
+    featureItems: featureItems,
+    hasFeatureItems: (featureItems?.length ?? 0) > 0,
 
     spellSlotsSummary,
     spellsSortModes,
@@ -293,6 +335,9 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
     spellSections: spellSectionsProcessed,
     hasSpellSections: (spellSectionsProcessed?.length ?? 0) > 0,
 
+    favoriteItemsSortKey,
+    favoriteFeaturesSortKey,
+    favoriteSpellsSortKey,
     favoriteItems,
     favoriteFeatures,
     favoriteSpells,

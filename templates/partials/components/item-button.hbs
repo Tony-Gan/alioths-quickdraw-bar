@@ -1,21 +1,23 @@
-<button type="button" class="aqb-btn aqb-item-btn{{#if favorited}} is-favorited{{/if}}" data-aqb-roll="{{roll}}" data-aqb-key="{{key}}" {{#if title}}title="{{title}}"{{/if}} {{#if disabled}}disabled{{/if}}>
-  <span class="aqb-item-icon-wrap">
-    {{#if icon}}
-      <img class="aqb-item-icon" src="{{icon}}" alt="" />
-    {{else}}
-      <span class="aqb-item-icon aqb-item-icon-placeholder"></span>
-    {{/if}}
-  </span>
+<div class="aqb-sort-item" data-aqb-sort-key="{{key}}" data-aqb-sort-section="{{sortSection}}" data-aqb-roll="{{roll}}" data-aqb-key="{{key}}" {{#if title}}title="{{title}}"{{/if}}>{{!-- // [MODIFIED] --}}
+  <button type="button" class="aqb-btn aqb-item-btn{{#if favorited}} is-favorited{{/if}}" data-aqb-roll="{{roll}}" data-aqb-key="{{key}}" {{#if title}}title="{{title}}"{{/if}} {{#if disabled}}disabled{{/if}}>{{!-- // [MODIFIED] --}}
+    <span class="aqb-item-icon-wrap">
+      {{#if icon}}
+        <img class="aqb-item-icon" src="{{icon}}" alt="" />
+      {{else}}
+        <span class="aqb-item-icon aqb-item-icon-placeholder"></span>
+      {{/if}}
+    </span>
 
-  <span class="aqb-item-main" title="{{label}}">{{label}}</span>
+    <span class="aqb-item-main" title="{{label}}">{{label}}</span>
 
-  <span class="aqb-item-sep" aria-hidden="true"></span>
+    <span class="aqb-item-sep" aria-hidden="true"></span>
 
-  <span class="aqb-item-right">
-    {{#if infoIcon}}
-      <i class="{{infoIcon}}" aria-hidden="true"></i>
-    {{else}}
-      {{info}}
-    {{/if}}
-  </span>
-</button>
+    <span class="aqb-item-right">
+      {{#if infoIcon}}
+        <i class="{{infoIcon}}" aria-hidden="true"></i>
+      {{else}}
+        {{info}}
+      {{/if}}
+    </span>
+  </button>
+</div>

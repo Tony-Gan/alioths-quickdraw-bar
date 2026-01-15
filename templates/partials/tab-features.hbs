@@ -9,18 +9,18 @@
         {{#each featureSections}}
           <section class="aqb-section aqb-feature-section">
             <h1>{{title}}</h1>
-            <div class="aqb-feature-list">
+            <div class="aqb-feature-list" data-aqb-sort-container="{{sortKey}}">
               {{#each items}}
-                {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="item" key=id icon=icon label=name info=usesText disabled=disabled favorited=favorited }}
+                {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="item" key=id icon=icon label=name info=usesText disabled=disabled favorited=favorited sortSection=../sortKey }}
               {{/each}}
             </div>
           </section>
         {{/each}}
       {{else}}
         {{#if hasFeatureItems}}
-          <div class="aqb-feature-list">
+          <div class="aqb-feature-list" data-aqb-sort-container="{{featureItemsSortKey}}">
             {{#each featureItems}}
-              {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="item" key=id icon=icon label=name info=usesText disabled=disabled favorited=favorited }}
+              {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="item" key=id icon=icon label=name info=usesText disabled=disabled favorited=favorited sortSection=../featureItemsSortKey }}
             {{/each}}
           </div>
         {{else}}

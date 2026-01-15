@@ -9,9 +9,9 @@
         {{#if hasFavoriteItems}}
           <section class="aqb-section aqb-item-section">
             <h1>所持物</h1>
-            <div class="aqb-item-list">
+            <div class="aqb-item-list" data-aqb-sort-container="{{favoriteItemsSortKey}}">
               {{#each favoriteItems}}
-                {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="item" key=id icon=icon label=name info=usesText favorited=true}}
+                {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="item" key=id icon=icon label=name info=usesText favorited=true sortSection=../favoriteItemsSortKey}}
               {{/each}}
             </div>
           </section>
@@ -20,9 +20,9 @@
         {{#if hasFavoriteFeatures}}
           <section class="aqb-section aqb-item-section">
             <h1>特性</h1>
-            <div class="aqb-feature-list">
+            <div class="aqb-feature-list" data-aqb-sort-container="{{favoriteFeaturesSortKey}}">
               {{#each favoriteFeatures}}
-                {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="item" key=id icon=icon label=name info=usesText favorited=true}}
+                {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="item" key=id icon=icon label=name info=usesText favorited=true sortSection=../favoriteFeaturesSortKey}}
               {{/each}}
             </div>
           </section>
@@ -31,9 +31,9 @@
         {{#if hasFavoriteSpells}}
           <section class="aqb-section aqb-spell-section">
             <h1>法术</h1>
-            <div class="aqb-spell-list">
+            <div class="aqb-spell-list" data-aqb-sort-container="{{favoriteSpellsSortKey}}">
               {{#each favoriteSpells}}
-                {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="spell" key=id icon=icon label=name infoIcon=prepIcon title=prepTitle disabled=disabled favorited=true}}
+                {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="spell" key=id icon=icon label=name infoIcon=prepIcon title=prepTitle disabled=disabled favorited=true sortSection=../favoriteSpellsSortKey}}
               {{/each}}
             </div>
           </section>

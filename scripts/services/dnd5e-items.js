@@ -65,7 +65,7 @@ export function groupItemsByType(items, priority = "weapon") {
       .slice()
       .sort((a, b) => (getItemName(a) ?? "").localeCompare(getItemName(b) ?? "", "zh"))
       .map(mapItemButton);
-    sections.push({ title: TYPE_TITLES[type] ?? type, items: mapped });
+    sections.push({ key: `type:${type}`, title: TYPE_TITLES[type] ?? type, items: mapped });
   }
   return sections;
 }
@@ -101,7 +101,7 @@ export function groupItemsByUseTime(items) {
       .slice()
       .sort((a, b) => (getItemName(a) ?? "").localeCompare(getItemName(b) ?? "", "zh"))
       .map(mapItemButton);
-    sections.push({ title: titles[key] ?? "其他", items: mapped });
+    sections.push({ key: `time:${key}`, title: titles[key] ?? "其他", items: mapped });
   }
   return sections;
 }

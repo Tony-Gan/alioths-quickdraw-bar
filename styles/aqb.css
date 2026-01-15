@@ -455,6 +455,32 @@
   gap: 6px;
 }
 
+/* --- Sortable wrapper (拖拽排序) --- */
+.aqb-app .aqb-sort-item {
+  width: 100%;
+}
+
+.aqb-app .aqb-sort-item > .aqb-item-btn {
+  width: 100%;
+}
+
+.aqb-app .aqb-sort-item > .aqb-item-btn:disabled {
+  pointer-events: none;
+}
+
+.aqb-app .aqb-sort-item.aqb-sort-dragging {
+  position: fixed;
+  z-index: 10001;
+  pointer-events: none;
+  box-shadow: var(--aqb-card-shadow-hover);
+}
+
+.aqb-app .aqb-sort-placeholder {
+  border: 1px dashed var(--aqb-border-subtle);
+  border-radius: 6px;
+  background: var(--aqb-bg-subtle);
+}
+
 .aqb-app .aqb-item-btn.is-favorited {
   position: relative;
   border-color: var(--aqb-border-toggle-on);
@@ -641,7 +667,7 @@
   box-shadow: var(--aqb-card-shadow-hover);
   opacity: 0;
   transform: translateY(-6px) scale(0.98);
-  transition: opacity 0.12s ease, transform 0.12s ease;
+  transition: opacity 0.25s ease, transform 0.25s ease;
 }
 
 .aqb-item-popover.is-open {

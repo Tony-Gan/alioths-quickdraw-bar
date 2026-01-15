@@ -9,9 +9,9 @@
         {{#each itemSections}}
           <section class="aqb-section aqb-item-section">
             <h1>{{title}}</h1>
-            <div class="aqb-item-list">
+            <div class="aqb-item-list" data-aqb-sort-container="{{sortKey}}">
               {{#each items}}
-                {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="item" key=id icon=icon label=name info=usesText disabled=disabled favorited=favorited}}
+                {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="item" key=id icon=icon label=name info=usesText disabled=disabled favorited=favorited sortSection=../sortKey}} <!-- // [MODIFIED] -->
               {{/each}}
             </div>
           </section>

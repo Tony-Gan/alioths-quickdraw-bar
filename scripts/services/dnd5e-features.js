@@ -79,7 +79,7 @@ export function groupFeatureButtonsByUseTime(featureButtons) {
     const items = list
       .slice()
       .sort((a, b) => (a?.name ?? "").localeCompare((b?.name ?? ""), "zh"));
-    sections.push({ title: titles[key] ?? "其他", items });
+    sections.push({ key: `time:${key}`, title: titles[key] ?? "其他", items });
   }
   return sections;
 }

@@ -95,7 +95,7 @@ export function groupSpellsByLevel(spells) {
         };
       });
 
-    sections.push({ title, spells: spellsMapped });
+    sections.push({ key: `level:${lvl}`, title, spells: spellsMapped });
   }
   return sections;
 }
@@ -146,7 +146,7 @@ export function groupSpellsByCastingTime(spells) {
         };
       });
 
-    sections.push({ title: titles[key] ?? "其他", spells: spellsMapped });
+    sections.push({ key: `time:${key}`, title: titles[key] ?? "其他", spells: spellsMapped });
   }
   return sections;
 }

@@ -45,6 +45,9 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     this._itemHoverTimer = null;
     this._itemHoverBtn = null;
     this._itemHoverPos = { x: 0, y: 0 };
+
+    this._sortState = null;
+    this._suppressNextClick = false;
     
     this._spellsUnpreparedMode = game.settings.get(MODULE_ID, SETTINGS.SPELLS_UNPREPARED_MODE) || "disable";
     this._spellsHideMode = "hide";
@@ -119,9 +122,9 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     this.element.addEventListener("mouseover", (ev) => this._handleMouseOver(ev));
     this.element.addEventListener("mouseout", (ev) => this._handleMouseOut(ev));
 
+    this.element.addEventListener("pointerdown", (ev) => this._handleSortPointerDown(ev), { passive: false });
     this.element.addEventListener("wheel", (ev) => this._handleWheel(ev), { passive: false });
   }
-
 
   async _onRender(context, options) {
     await super._onRender(context, options);
@@ -138,7 +141,8 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   _handleMouseOver(ev) {
-    const btn = ev?.target?.closest?.("button.aqb-item-btn[data-aqb-key]");
+    if (this._sortState?.dragging) return;
+    const btn = ev?.target?.closest?.(".aqb-sort-item[data-aqb-key]");
     if (!(btn instanceof HTMLElement)) return;
     if (this._itemHoverBtn === btn) return;
     this._itemHoverBtn = btn;
@@ -151,12 +155,12 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   _handleMouseOut(ev) {
-    const fromBtn = ev?.target?.closest?.("button.aqb-item-btn[data-aqb-key]");
+    const fromBtn = ev?.target?.closest?.(".aqb-sort-item[data-aqb-key]");
     if (!(fromBtn instanceof HTMLElement)) return;
     if (this._itemHoverBtn !== fromBtn) return;
     const to = ev?.relatedTarget;
     if (to instanceof Node && fromBtn.contains(to)) return;
-    if (to instanceof Node && to.closest?.("button.aqb-item-btn[data-aqb-key]") === fromBtn) return;
+    if (to instanceof Node && to.closest?.(".aqb-sort-item[data-aqb-key]") === fromBtn) return;
 
     if (this._itemHoverTimer) window.clearTimeout(this._itemHoverTimer);
     this._itemHoverTimer = null;
@@ -249,10 +253,11 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
   /* -------------------------------------------- */
 
   _handleContextMenu(ev) {
+    if (this._sortState?.dragging) return;
     const target = ev.target;
     if (!target) return;
 
-    const btn = target.closest?.("button[data-aqb-roll]");
+    const btn = target.closest?.("[data-aqb-roll][data-aqb-key]");
     if (!btn) return;
 
     const roll = btn.dataset?.aqbRoll;
@@ -311,12 +316,227 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     return null;
   }
 
+  _handleSortPointerDown(ev) {
+    if (!ev || ev.button !== 0) return;
+    const t = ev.target;
+    if (!(t instanceof Node)) return;
+    const itemEl = t.closest?.(".aqb-sort-item[data-aqb-sort-key][data-aqb-sort-section]");
+    if (!(itemEl instanceof HTMLElement)) return;
+    const container = itemEl.closest?.("[data-aqb-sort-container]");
+    if (!(container instanceof HTMLElement)) return;
+    const containerKey = String(container.dataset?.aqbSortContainer ?? "");
+    const sectionKey = String(itemEl.dataset?.aqbSortSection ?? "");
+    if (!containerKey || !sectionKey || containerKey !== sectionKey) return;
+    if (this._sortState?.active) return;
+
+    this._sortState = {
+      active: true,
+      dragging: false,
+      pointerId: ev.pointerId,
+      startX: ev.clientX ?? 0,
+      startY: ev.clientY ?? 0,
+      offsetX: 0,
+      offsetY: 0,
+      container,
+      containerKey,
+      itemEl,
+      placeholder: null
+    };
+
+    try { itemEl.setPointerCapture(ev.pointerId); } catch (_) {}
+
+    const move = (e) => this._handleSortPointerMove(e);
+    const up = (e) => this._handleSortPointerUp(e);
+    this._sortState._move = move;
+    this._sortState._up = up;
+    window.addEventListener("pointermove", move, { passive: false });
+    window.addEventListener("pointerup", up, { passive: false });
+  }
+
+  _handleSortPointerMove(ev) {
+    const st = this._sortState;
+    if (!st?.active) return;
+    if (ev.pointerId !== st.pointerId) return;
+
+    const x = ev.clientX ?? 0;
+    const y = ev.clientY ?? 0;
+    const dx = x - st.startX;
+    const dy = y - st.startY;
+
+    if (!st.dragging) {
+      if ((dx * dx + dy * dy) < 36) return;
+      this._startSortDrag(ev);
+    }
+
+    ev.preventDefault();
+    this._moveSortDrag(ev);
+  }
+
+  _handleSortPointerUp(ev) {
+    const st = this._sortState;
+    if (!st?.active) return;
+    if (ev.pointerId !== st.pointerId) return;
+
+    window.removeEventListener("pointermove", st._move, { passive: false });
+    window.removeEventListener("pointerup", st._up, { passive: false });
+
+    if (!st.dragging) {
+      this._sortState = null;
+      return;
+    }
+
+    this._finishSortDrag();
+  }
+
+  _startSortDrag(ev) {
+    const st = this._sortState;
+    if (!st?.active || st.dragging) return;
+    const el = st.itemEl;
+    const rect = el.getBoundingClientRect();
+    st.dragging = true;
+    st.offsetX = (ev.clientX ?? rect.left) - rect.left;
+    st.offsetY = (ev.clientY ?? rect.top) - rect.top;
+
+    this._closeItemPopover();
+    if (this._itemHoverTimer) window.clearTimeout(this._itemHoverTimer);
+    this._itemHoverTimer = null;
+    this._itemHoverBtn = null;
+    this._closeItemHoverCard();
+
+    const ph = document.createElement("div");
+    ph.classList.add("aqb-sort-placeholder");
+    ph.style.width = `${Math.round(rect.width)}px`;
+    ph.style.height = `${Math.round(rect.height)}px`;
+    st.placeholder = ph;
+    st.container.insertBefore(ph, el.nextSibling);
+
+    document.body.appendChild(el);
+    el.classList.add("aqb-sort-dragging");
+    el.style.left = `${Math.round(rect.left)}px`;
+    el.style.top = `${Math.round(rect.top)}px`;
+    el.style.width = `${Math.round(rect.width)}px`;
+    el.style.height = `${Math.round(rect.height)}px`;
+  }
+
+  _moveSortDrag(ev) {
+    const st = this._sortState;
+    if (!st?.dragging) return;
+    const el = st.itemEl;
+    const x = (ev.clientX ?? 0) - st.offsetX;
+    const y = (ev.clientY ?? 0) - st.offsetY;
+    el.style.left = `${Math.round(x)}px`;
+    el.style.top = `${Math.round(y)}px`;
+
+    this._repositionSortPlaceholder(ev.clientX ?? 0, ev.clientY ?? 0);
+  }
+
+  _repositionSortPlaceholder(px, py) {
+    const st = this._sortState;
+    if (!st?.dragging) return;
+    const container = st.container;
+    const ph = st.placeholder;
+    if (!container || !ph) return;
+
+    const items = Array.from(container.querySelectorAll(".aqb-sort-item"));
+    if (!items.length) return;
+
+    const rects = items.map((el) => ({ el, r: el.getBoundingClientRect() }))
+      .sort((a, b) => (a.r.top - b.r.top) || (a.r.left - b.r.left));
+
+    const rows = [];
+    const tol = 8;
+    for (const it of rects) {
+      const row = rows[rows.length - 1];
+      if (!row || Math.abs(it.r.top - row.top) > tol) {
+        rows.push({ top: it.r.top, items: [it] });
+      } else {
+        row.items.push(it);
+      }
+    }
+
+    let bestRow = rows[0];
+    let bestDist = Infinity;
+    for (const row of rows) {
+      const ys = row.items.map((x) => x.r.top + x.r.height / 2);
+      const cy = ys.reduce((a, b) => a + b, 0) / ys.length;
+      const d = Math.abs(py - cy);
+      if (d < bestDist) { bestDist = d; bestRow = row; }
+    }
+
+    const rowItems = bestRow.items.slice().sort((a, b) => a.r.left - b.r.left);
+    let beforeEl = null;
+    for (const it of rowItems) {
+      const mid = it.r.left + it.r.width / 2;
+      if (px < mid) { beforeEl = it.el; break; }
+    }
+    if (!beforeEl) {
+      const last = rowItems[rowItems.length - 1];
+      const idx = rects.findIndex((x) => x.el === last.el);
+      beforeEl = rects[idx + 1]?.el ?? null;
+    }
+
+    const old = new Map(rects.map((x) => [x.el, x.r]));
+    if (beforeEl) container.insertBefore(ph, beforeEl); else container.appendChild(ph);
+    this._animateSortReflow(container, old);
+  }
+
+  _animateSortReflow(container, oldRects) {
+    const els = Array.from(container.querySelectorAll(".aqb-sort-item"));
+    for (const el of els) {
+      const old = oldRects.get(el);
+      if (!old) continue;
+      const now = el.getBoundingClientRect();
+      const dx = old.left - now.left;
+      const dy = old.top - now.top;
+      if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) continue;
+      el.animate(
+        [{ transform: `translate(${dx}px, ${dy}px)` }, { transform: "translate(0px, 0px)" }],
+        { duration: 160, easing: "cubic-bezier(0.2, 0, 0, 1)" }
+      );
+    }
+  }
+
+  async _saveSortOrder(sortKey, ids) {
+    const actor = this._getBoundActor();
+    if (!actor || !actor.isOwner) return;
+    const current = actor?.getFlag?.(MODULE_ID, "sortOrders") ?? actor?.flags?.[MODULE_ID]?.sortOrders ?? {};
+    const next = { ...(current ?? {}) };
+    next[sortKey] = Array.isArray(ids) ? ids : [];
+    await actor.setFlag(MODULE_ID, "sortOrders", next);
+  }
+
+  _finishSortDrag() {
+    const st = this._sortState;
+    if (!st?.dragging) { this._sortState = null; return; }
+    const el = st.itemEl;
+    const ph = st.placeholder;
+    const container = st.container;
+    const key = st.containerKey;
+
+    el.classList.remove("aqb-sort-dragging");
+    el.style.left = "";
+    el.style.top = "";
+    el.style.width = "";
+    el.style.height = "";
+
+    container.insertBefore(el, ph);
+    ph.remove();
+
+    const ids = Array.from(container.querySelectorAll(".aqb-sort-item"))
+      .map((x) => String(x.dataset?.aqbSortKey ?? ""))
+      .filter((s) => Boolean(s));
+    void this._saveSortOrder(key, ids);
+
+    this._sortState = null;
+    this._suppressNextClick = true;
+  }
+
   _closeItemPopover() {
     const pop = this._itemPopoverEl;
     if (pop) {
       pop.classList.remove("is-open");
       pop.classList.add("is-closing");
-      window.setTimeout(() => pop.remove(), 140);
+      window.setTimeout(() => pop.remove(), 220);
     }
     this._itemPopoverEl = null;
     if (this._itemPopoverDismissHandler) document.removeEventListener("mousedown", this._itemPopoverDismissHandler, true);
@@ -427,6 +647,14 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
   /* -------------------------------------------- */
 
   _handleClick(ev) {
+    if (this._suppressNextClick) {
+      this._suppressNextClick = false;
+      ev.preventDefault();
+      ev.stopPropagation();
+      return;
+    }
+    if (this._sortState?.dragging) return;
+
     const target = ev.target;
     
     // Tab 切换
@@ -441,12 +669,15 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     }
 
     // 掷骰/使用
-    const rollBtn = target.closest("button[data-aqb-roll]");
+    const rollBtn = target.closest("[data-aqb-roll]");
     if (rollBtn) {
+      const realBtn = rollBtn.matches("button") ? rollBtn : (rollBtn.querySelector?.("button") ?? null);
+      if (realBtn?.disabled) return;
+
       ev.preventDefault();
       const action = rollBtn.dataset?.aqbRoll;
       const key = rollBtn.dataset?.aqbKey;
-      const isSplit = Boolean(rollBtn.classList?.contains("aqb-split2-btn"));
+      const isSplit = Boolean(realBtn?.classList?.contains("aqb-split2-btn"));
       const excluded = ["death-save", "short-rest", "long-rest"].includes(String(action ?? ""));
       const hasQuickMod = Boolean(ev.shiftKey || ev.altKey || ev.ctrlKey);
       const fastCapable = ["initiative", "ability-check", "ability-save", "skill"].includes(String(action ?? ""));
