@@ -2,7 +2,7 @@
   "id": "alioths-quickdraw-bar",
   "title": "Alioth's Quickdraw Bar",
   "description": "Alioth's Quickdraw Bar 快捷工具栏",
-  "version": "0.9.23",
+  "version": "0.9.27",
   "authors": [
     {
       "name": "ChatGPT/Gemini, my employees"
@@ -47,6 +47,6 @@
     "templates/partials/components/icon-toggle-button.hbs"
   ],
   "url": "https://github.com/Tony-Gan/alioths-quickdraw-bar",
-  "manifest": "https://github.com/Tony-Gan/alioths-quickdraw-bar/releases/download/0.9.23/module.json",
-  "download": "https://github.com/Tony-Gan/alioths-quickdraw-bar/releases/download/0.9.23/module.zip"
+  "manifest": "https://github.com/Tony-Gan/alioths-quickdraw-bar/releases/download/0.9.27/module.json",
+  "download": "https://github.com/Tony-Gan/alioths-quickdraw-bar/releases/download/0.9.27/module.zip"
 }

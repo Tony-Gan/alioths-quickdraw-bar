@@ -18,30 +18,60 @@
   --aqb-font-size: 12px;
   --aqb-bg-toggle-on: rgba(0, 140, 255, 0.18);
   --aqb-border-toggle-on: var(--color-border-highlight, var(--aqb-border-main));
+  --aqb-glass-bg: rgba(255, 255, 255, 0.14);
+  --aqb-glass-border: rgba(255, 255, 255, 0.22);
+  --aqb-glass-blur: 10px;
+  --aqb-card-shadow: 0 8px 24px rgba(0, 0, 0, 0.10);
+  --aqb-card-shadow-hover: 0 12px 32px rgba(0, 0, 0, 0.14);
+  --aqb-divider-hi: rgba(255, 255, 255, 0.55);
+  --aqb-divider-lo: rgba(0, 0, 0, 0.22);
+  --aqb-btn-shadow: 0 1px 2px rgba(0, 0, 0, 0.10);
+  --aqb-btn-shadow-hover: 0 6px 14px rgba(0, 0, 0, 0.16);
+  --aqb-btn-shadow-active: 0 1px 2px rgba(0, 0, 0, 0.10) inset;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --aqb-text-primary: var(--color-text-light-primary);
-    --aqb-text-secondary: var(--color-text-light-highlight);
-    --aqb-text-muted: var(--color-text-light-heading);
-    --aqb-bg-panel: var(--color-bg-dark, #222); 
-    --aqb-bg-element: rgba(255, 255, 255, 0.05);
-    --aqb-bg-subtle: rgba(255, 255, 255, 0.03);
-    --aqb-border-main: var(--color-border-dark-primary, #444);
-    --aqb-border-subtle: var(--color-border-dark-secondary, #333);
-    --aqb-bg-toggle-on: rgba(0, 140, 255, 0.28);
-  }
+.theme-dark {
+  --aqb-text-primary: var(--color-text-light-primary);
+  --aqb-text-secondary: var(--color-text-light-highlight);
+  --aqb-text-muted: var(--color-text-light-heading);
+  --aqb-bg-panel: var(--color-bg-dark, #222);
+  --aqb-bg-element: rgba(255, 255, 255, 0.05);
+  --aqb-bg-subtle: rgba(255, 255, 255, 0.03);
+  --aqb-border-main: var(--color-border-dark-primary, #444);
+  --aqb-border-subtle: var(--color-border-dark-secondary, #333);
+  --aqb-bg-toggle-on: rgba(0, 140, 255, 0.28);
+  --aqb-glass-bg: rgba(20, 20, 20, 0.26);
+  --aqb-glass-border: rgba(255, 255, 255, 0.10);
+  --aqb-divider-hi: rgba(255, 255, 255, 0.18);
+  --aqb-divider-lo: rgba(0, 0, 0, 0.55);
+  --aqb-btn-shadow: 0 1px 2px rgba(0, 0, 0, 0.28);
+  --aqb-btn-shadow-hover: 0 8px 18px rgba(0, 0, 0, 0.40);
+  --aqb-btn-shadow-active: 0 1px 2px rgba(0, 0, 0, 0.32) inset;
 }
 
 /* ========================================= */
 /* 1. 窗口与基础布局 */
+
 /* ========================================= */
+
+.aqb-app {
+  border-radius: 12px 12px 0 12px;
+}
+
+.aqb-app .window-header {
+  border-radius: 12px 12px 0 0;
+}
+
+.aqb-app .window-header .window-title {
+  text-align: center;
+  flex: 1 1 auto;
+}
 
 .aqb-app .window-content {
   padding: var(--aqb-spacing) !important;
   overflow: hidden;
   color: var(--aqb-text-primary);
+  border-radius: 0 0 0 12px;
 }
 
 .aqb-dashboard {
@@ -60,6 +90,18 @@
   align-items: center;
   gap: var(--aqb-spacing-lg);
   flex: 0 0 auto;
+}
+
+.aqb-token {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.aqb-token-label {
+  font-size: var(--aqb-font-size);
+  color: var(--aqb-text-secondary);
+  white-space: nowrap;
 }
 
 .aqb-token select {
@@ -82,16 +124,27 @@
 .aqb-tab {
   border: 1px solid transparent;
   border-bottom: none;
-  border-radius: 4px 4px 0 0;
+  border-radius: 6px 6px 0 0;
   padding: 2px 8px;
   font-size: var(--aqb-font-size);
   background: var(--aqb-bg-subtle);
   cursor: pointer;
   color: var(--aqb-text-secondary);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease, border-color 0.12s ease;
 }
 
 .aqb-tab:hover {
   background: rgba(0,0,0,0.08);
+}
+
+.aqb-tab:not(.active):hover {
+  transform: translateY(-1px);
+  box-shadow: var(--aqb-btn-shadow-hover);
+}
+
+.aqb-tab:not(.active):active {
+  transform: translateY(1px);
+  box-shadow: var(--aqb-btn-shadow-active);
 }
 
 .aqb-tab.active {
@@ -128,14 +181,36 @@
   line-height: 1.2;
 }
 
-.aqb-empty {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0.5;
-  font-style: italic;
-  color: var(--aqb-text-secondary);
+/* ========================================= */
+/* 3.1 卡片化 Section */
+/* ========================================= */
+
+.aqb-app .aqb-section,
+.aqb-app .aqb-checks-col {
+  position: relative;
+  box-sizing: border-box;
+  background: var(--aqb-glass-bg);
+  border: 1px solid var(--aqb-glass-border);
+  border-radius: 10px;
+  backdrop-filter: blur(var(--aqb-glass-blur)) saturate(130%);
+  -webkit-backdrop-filter: blur(var(--aqb-glass-blur)) saturate(130%);
+  box-shadow: var(--aqb-card-shadow);
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease, background 0.12s ease;
+}
+
+.aqb-app .aqb-section {
+  padding: 8px;
+}
+
+.aqb-app .aqb-checks-col {
+  padding: 6px;
+}
+
+.aqb-app .aqb-section:hover,
+.aqb-app .aqb-checks-col:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--aqb-card-shadow-hover);
+  border-color: var(--aqb-border-main);
 }
 
 /* ========================================= */
@@ -160,10 +235,10 @@
 }
 
 .aqb-col-grid-2 {
-  width: 164px; 
+  width: 176px;
 }
 
-/* 内部 Grid 容器 (2列) */
+/* 内部 Grid 容器 */
 .aqb-grid-content {
   display: grid;
   grid-template-columns: repeat(2, 80px);
@@ -181,10 +256,10 @@
   align-content: flex-start;
 }
 
-/* 类型2：技能堆叠列 (变宽) */
+/* 类型2：技能堆叠列 */
 .aqb-col-skills-stack {
   flex: 0 1 auto;
-  min-width: 250px;
+  min-width: 262px;
   display: flex;
   flex-direction: column;
 }
@@ -202,7 +277,7 @@
   padding-right: 4px;
 }
 
-/* 技能每一行的内部 (流式排列技能) */
+/* 技能每一行的内部 */
 .aqb-skill-row-group {
   display: flex;
   flex-wrap: wrap;
@@ -218,23 +293,38 @@
   align-items: center;
   border: 1px solid transparent;
   background: var(--aqb-bg-element);
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: var(--aqb-font-size);
   height: var(--aqb-btn-height);
   padding: 0 6px;
-  transition: all 0.15s ease-in-out;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease, border-color 0.12s ease, filter 0.12s ease;
   cursor: pointer;
   color: var(--aqb-text-primary);
   white-space: nowrap;
   overflow: hidden; 
   max-width: 100%;
+  transform: translateY(0);
+  box-shadow: var(--aqb-btn-shadow);
+  will-change: transform;
 }
 
-.aqb-app .aqb-btn:hover {
+.aqb-app .aqb-btn:hover:not(:disabled) {
   background: var(--aqb-bg-hover);
   border-color: var(--aqb-border-main);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  box-shadow: var(--aqb-btn-shadow-hover);
   color: var(--aqb-text-primary); 
+  transform: translateY(-1px);
+}
+
+.aqb-app .aqb-btn:active:not(:disabled) {
+  transform: translateY(1px);
+  box-shadow: var(--aqb-btn-shadow-active);
+  filter: brightness(0.98);
+}
+
+.aqb-app .aqb-btn:focus-visible {
+  outline: 2px solid var(--color-border-highlight, var(--aqb-border-main));
+  outline-offset: 1px;
 }
 
 .aqb-app .aqb-btn:disabled {
@@ -262,9 +352,16 @@
 }
 
 .aqb-app .aqb-split2-sep {
-  margin: 0 4px;
-  opacity: 0.2;
-  color: currentColor;
+  display: inline-block;
+  width: 2px;
+  height: 60%;
+  margin: 0 5px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--aqb-divider-hi), var(--aqb-divider-lo));
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06) inset;
+  opacity: 0.95;
+  flex: 0 0 auto;
+  pointer-events: none;
 }
 
 .aqb-app .aqb-split2-right {
@@ -296,9 +393,16 @@
 }
 
 .aqb-app .aqb-icon-toggle-sep {
-  margin: 0 2px;
-  opacity: 0.35;
-  color: currentColor;
+  display: inline-block;
+  width: 2px;
+  height: 60%;
+  margin: 0 4px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--aqb-divider-hi), var(--aqb-divider-lo));
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06) inset;
+  opacity: 0.9;
+  flex: 0 0 auto;
+  pointer-events: none;
 }
 
 .aqb-app .aqb-icon-toggle-right {
@@ -359,9 +463,16 @@
 }
 
 .aqb-app .aqb-item-sep {
-  margin: 0;
-  opacity: 0.2;
-  flex-shrink: 0;
+  display: inline-block;
+  width: 2px;
+  height: 60%;
+  margin: 0 6px;
+  border-radius: 2px;
+  background: linear-gradient(to right, var(--aqb-divider-hi), var(--aqb-divider-lo));
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06) inset;
+  opacity: 0.95;
+  flex: 0 0 auto;
+  pointer-events: none;
 }
 
 .aqb-app .aqb-item-right {
@@ -371,7 +482,6 @@
   font-size: 0.9em;
   display: flex;
   align-items: center;
-  min-width: 36px;
   min-width: 0;
   justify-content: center;
   text-align: center;
@@ -394,8 +504,7 @@
   pointer-events: none;
 }
 
-.theme-dark .aqb-item-hovercard,
-body.theme-dark .aqb-item-hovercard {
+.theme-dark .aqb-item-hovercard {
   background: var(--aqb-bg-panel);
 }
 
@@ -466,51 +575,45 @@ body.theme-dark .aqb-item-hovercard {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 6px;
-  min-width: 140px;
-  border: 1px solid var(--aqb-border-main);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+  padding: 8px;
+  min-width: 150px;
+  border: 1px solid var(--aqb-glass-border);
+  border-radius: 10px;
+  background: var(--aqb-glass-bg);
+  backdrop-filter: blur(var(--aqb-glass-blur)) saturate(130%);
+  -webkit-backdrop-filter: blur(var(--aqb-glass-blur)) saturate(130%);
+  box-shadow: var(--aqb-card-shadow-hover);
+  opacity: 0;
+  transform: translateY(-6px) scale(0.98);
+  transition: opacity 0.12s ease, transform 0.12s ease;
 }
 
-/* Dark mode: keep the original panel background */
-.theme-dark .aqb-item-popover,
-body.theme-dark .aqb-item-popover {
-  background: var(--aqb-bg-panel);
+.aqb-item-popover.is-open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
 }
 
-@media (prefers-color-scheme: dark) {
-  .aqb-item-popover {
-    background: var(--aqb-bg-panel);
-  }
+.aqb-item-popover.is-closing {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.98);
+  pointer-events: none;
 }
 
+/* popover 内部按钮 */
 .aqb-item-popover-btn {
-  display: inline-flex;
-  align-items: center;
   width: 100%;
-  height: var(--aqb-btn-height);
-  border: 1px solid transparent;
-  background: var(--aqb-bg-element);
-  border-radius: 4px;
-  font-size: var(--aqb-font-size);
-  padding: 0 8px;
-  cursor: pointer;
-  color: var(--aqb-text-primary);
   justify-content: flex-start;
-}
-
-.aqb-item-popover-btn:hover {
-  background: var(--aqb-bg-hover);
-  border-color: var(--aqb-border-main);
+  padding: 0 8px;
 }
 
 /* ========================================= */
 /* 6.1 所持物页样式 (Items) */
 /* ========================================= */
 
-.aqb-items {
+.aqb-items,
+.aqb-features,
+.aqb-spells,
+.aqb-state-move {
   flex: 1;
   min-height: 0;
   display: flex;
@@ -519,10 +622,11 @@ body.theme-dark .aqb-item-popover {
   overflow: hidden;
 }
 
-.aqb-items-top {
+.aqb-items-top,
+.aqb-features-top,
+.aqb-spells-top {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
   margin-bottom: 6px;
   font-size: var(--aqb-font-size);
   border-bottom: 1px solid var(--aqb-border-subtle);
@@ -531,21 +635,40 @@ body.theme-dark .aqb-item-popover {
   width: 100%;
 }
 
-.aqb-items-controls {
+.aqb-items-top,
+.aqb-features-top {
+  justify-content: flex-end;
+}
+
+.aqb-spells-top {
+  justify-content: space-between;
+}
+
+.aqb-items-controls,
+.aqb-features-controls,
+.aqb-spells-controls {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
 .aqb-items-sort,
-.aqb-items-hide {
+.aqb-items-hide,
+.aqb-features-sort,
+.aqb-features-hidden,
+.aqb-spells-unprepared,
+.aqb-spells-hide,
+.aqb-spells-sort {
   display: flex;
   align-items: center;
   gap: 4px;
   white-space: nowrap;
 }
 
-.aqb-items-content {
+.aqb-items-content,
+.aqb-features-content,
+.aqb-spells-content,
+.aqb-state-move-content {
   flex: 1;
   overflow-y: auto;
   padding-right: 4px;
@@ -554,13 +677,15 @@ body.theme-dark .aqb-item-popover {
   overscroll-behavior: contain;
 }
 
-.aqb-item-list {
+.aqb-item-list,
+.aqb-feature-list,
+.aqb-spell-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
   gap: var(--aqb-spacing);
 }
 
-.aqb-item-section h1 {
+.aqb-section h1 {
   display: block !important;
   font-size: 0.9em !important;
   margin: 6px 0 4px 0 !important;
@@ -572,157 +697,16 @@ body.theme-dark .aqb-item-popover {
 /* 6.2 特性页样式 (Features) */
 /* ========================================= */
 
-.aqb-features {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column !important;
-  width: 100%;
-  overflow: hidden;
-}
-
-.aqb-features-top {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  margin-bottom: 6px;
-  font-size: var(--aqb-font-size);
-  border-bottom: 1px solid var(--aqb-border-subtle);
-  padding-bottom: var(--aqb-spacing);
-  flex-shrink: 0;
-  width: 100%;
-}
-
-.aqb-features-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.aqb-features-hidden {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
-}
-
-.aqb-features-content {
-  flex: 1;
-  overflow-y: auto;
-  padding-right: 4px;
-  min-height: 0;
-  width: 100%;
-  overscroll-behavior: contain;
-}
-
-.aqb-feature-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: var(--aqb-spacing);
-}
-
 /* ========================================= */
 /* 6. 法术页样式 (Spells) */
 /* ========================================= */
-
-
-.aqb-spells {
-  flex: 1; 
-  min-height: 0;
-  display: flex;
-  flex-direction: column !important;
-  width: 100%;
-  overflow: hidden;
-}
-
-.aqb-spells-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 6px;
-  font-size: var(--aqb-font-size);
-  border-bottom: 1px solid var(--aqb-border-subtle);
-  padding-bottom: var(--aqb-spacing);
-  flex-shrink: 0; 
-  width: 100%;
-}
-
-.aqb-spells-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.aqb-spells-unprepared,
-.aqb-spells-hide {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
-}
-
-.aqb-spells-sort {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  white-space: nowrap;
-}
-
-.aqb-spells-content {
-  flex: 1;
-  overflow-y: auto;
-  padding-right: 4px; 
-  min-height: 0;
-  width: 100%;
-  overscroll-behavior: contain;
-}
-
-.aqb-spell-list {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: var(--aqb-spacing);
-}
-
-.aqb-spell-section h1 {
-  display: block !important;
-  font-size: 0.9em !important;
-  margin: 6px 0 4px 0 !important;
-  border-bottom: none !important;
-  color: var(--aqb-text-secondary);
-}
 
 /* ========================================= */
 /* 7. 状态/移动页样式 (State/Move) */
 /* ========================================= */
 
-.aqb-state-move {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column !important;
-  width: 100%;
-  overflow: hidden;
-}
-
-.aqb-state-move-content {
-  flex: 1;
-  overflow-y: auto;
-  padding-right: 4px;
-  min-height: 0;
-  width: 100%;
-  overscroll-behavior: contain;
-}
-
 .aqb-state-move-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, 80px);
   gap: var(--aqb-spacing);
-}
-
-.aqb-state-move-section h1 {
-  display: block !important;
-  font-size: 0.9em !important;
-  margin: 6px 0 4px 0 !important;
-  border-bottom: none !important;
-  color: var(--aqb-text-secondary);
 }

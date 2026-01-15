@@ -1,13 +1,13 @@
 <div class="aqb-dashboard">
   <div class="aqb-topbar">
     <div class="aqb-token">
+      <span class="aqb-token-label">当前角色</span>
       <select data-aqb-token-select {{#unless hasTokens}}disabled{{/unless}}>
         {{#each tokens}}
           <option value="{{id}}" {{#if selected}}selected{{/if}}>{{name}}</option>
         {{/each}}
       </select>
     </div>
-
     <div class="aqb-spacer"></div>
 
     <div class="aqb-tabs" aria-label="AQB Tabs">

@@ -15,16 +15,51 @@ function formatFeatureUses(item) {
   return `${v}`;
 }
 
+function normalizeActivationType(item) {
+  const t = item?.system?.activation?.type;
+  if (t === "action") return "action";
+  if (t === "bonus") return "bonus";
+  if (t === "reaction") return "reaction";
+  return "other";
+}
+
 function mapFeatureButton(item) {
   const displayName = getItemName(item) || "";
   return {
     id: item.id,
     name: displayName,
     icon: item.img,
-    usesText: formatFeatureUses(item)
+    usesText: formatFeatureUses(item),
+    activationType: normalizeActivationType(item)
   };
 }
 
+export function groupFeatureButtonsByUseTime(featureButtons) {
+  const order = ["action", "bonus", "reaction", "other"];
+  const titles = {
+    action: "动作",
+    bonus: "附赠动作",
+    reaction: "反应",
+    other: "其他"
+  };
+
+  const buckets = new Map(order.map((k) => [k, []]));
+  for (const f of (featureButtons ?? [])) {
+    const key = order.includes(f?.activationType) ? f.activationType : "other";
+    buckets.get(key)?.push(f);
+  }
+
+  const sections = [];
+  for (const key of order) {
+    const list = buckets.get(key) ?? [];
+    if (!list.length) continue;
+    const items = list
+      .slice()
+      .sort((a, b) => (a?.name ?? "").localeCompare((b?.name ?? ""), "zh"));
+    sections.push({ title: titles[key] ?? "其他", items });
+  }
+  return sections;
+}
 
 export function getActorFeatureButtons(actor) {
   const feats = getActorFeatureItemDocuments(actor);

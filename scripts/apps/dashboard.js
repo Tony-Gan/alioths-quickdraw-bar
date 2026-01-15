@@ -52,8 +52,10 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     this._itemsHideMode = "hide";
 
     this._featuresHiddenMode = "hide";
+    this._featuresSortMode = "default";
 
     this._handleUpdate = this._onUpdateAny.bind(this);
+    this._handleControlToken = this._onControlToken.bind(this);
     
     Hooks.on("updateActor", this._handleUpdate);
     Hooks.on("updateToken", this._handleUpdate);
@@ -66,6 +68,7 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     Hooks.on("createItem", this._handleUpdate);
     Hooks.on("deleteItem", this._handleUpdate);
 
+    Hooks.on("controlToken", this._handleControlToken);
   }
 
   /* -------------------------------------------- */
@@ -81,9 +84,9 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       this._spellsHideMode,
       this._itemsSortMode,
       this._itemsHideMode,
-      this._featuresHiddenMode
+      this._featuresHiddenMode,
+      this._featuresSortMode
     );
-
 
     if (context.finalTokenId !== this._tokenId) {
       this._tokenId = context.finalTokenId;
@@ -309,7 +312,12 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   _closeItemPopover() {
-    if (this._itemPopoverEl) this._itemPopoverEl.remove();
+    const pop = this._itemPopoverEl;
+    if (pop) {
+      pop.classList.remove("is-open");
+      pop.classList.add("is-closing");
+      window.setTimeout(() => pop.remove(), 140);
+    }
     this._itemPopoverEl = null;
     if (this._itemPopoverDismissHandler) document.removeEventListener("mousedown", this._itemPopoverDismissHandler, true);
     if (this._itemPopoverEscHandler) document.removeEventListener("keydown", this._itemPopoverEscHandler, true);
@@ -345,12 +353,12 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const hideDisabled = !canUnhide && isFavorited;
 
     pop.innerHTML = `
-      <button type="button" class="aqb-item-popover-btn" data-aqb-action="rename">重命名</button>
-      <button type="button" class="aqb-item-popover-btn" data-aqb-action="reset">重置</button>
-      <button type="button" class="aqb-item-popover-btn" data-aqb-action="${favAction}" ${favDisabled ? "disabled" : ""}>${favLabel}</button> <!-- [NEW] -->
-      <button type="button" class="aqb-item-popover-btn" data-aqb-action="${hideAction}" ${hideDisabled ? "disabled" : ""}>${hideLabel}</button> <!-- [MODIFIED] -->
-      <button type="button" class="aqb-item-popover-btn" data-aqb-action="view">显示详情</button>
-      <button type="button" class="aqb-item-popover-btn" data-aqb-action="chat">发送到聊天</button>
+      <button type="button" class="aqb-btn aqb-item-popover-btn" data-aqb-action="rename">重命名</button>
+      <button type="button" class="aqb-btn aqb-item-popover-btn" data-aqb-action="reset">重置</button>
+      <button type="button" class="aqb-btn aqb-item-popover-btn" data-aqb-action="${favAction}" ${favDisabled ? "disabled" : ""}>${favLabel}</button>
+      <button type="button" class="aqb-btn aqb-item-popover-btn" data-aqb-action="${hideAction}" ${hideDisabled ? "disabled" : ""}>${hideLabel}</button>
+      <button type="button" class="aqb-btn aqb-item-popover-btn" data-aqb-action="view">显示详情</button>
+      <button type="button" class="aqb-btn aqb-item-popover-btn" data-aqb-action="chat">发送到聊天</button>
     `;
 
     pop.style.visibility = "hidden";
@@ -371,6 +379,7 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     pop.style.left = `${Math.round(left)}px`;
     pop.style.top = `${Math.round(top)}px`;
     pop.style.visibility = "";
+    requestAnimationFrame(() => pop.classList.add("is-open"));
 
     pop.addEventListener("click", async (ev) => {
       const actionBtn = ev.target?.closest?.("button[data-aqb-action]");
@@ -414,7 +423,7 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   /* -------------------------------------------- */
-  /* 集中式事件处理 (Handlers) */
+  /* 集中式事件处理 */
   /* -------------------------------------------- */
 
   _handleClick(ev) {
@@ -446,7 +455,10 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     if (target.matches("select[data-aqb-token-select]")) {
       this._tokenId = target.value || null;
       const token = this._getBoundToken();
-      if (token) storeLastToken(token);
+      if (token) {
+        storeLastToken(token);
+        void this._setUserCharacterFromToken(token);
+      }
       this.render(false);
       return;
     }
@@ -467,7 +479,7 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       return;
     }
 
-    // 隐藏法术（暂不提供功能，仅保留状态）
+    // 隐藏法术
     if (target.matches("select[data-aqb-spells-hide]")) {
       this._spellsHideMode = target.value || "hide";
       this.render(false);
@@ -481,21 +493,28 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       return;
     }
 
-    // 隐藏物品（暂不提供功能，仅保留状态）
+    // 隐藏物品
     if (target.matches("select[data-aqb-items-hide]")) {
       this._itemsHideMode = target.value || "hide";
       this.render(false);
       return;
     }
 
-    // 被动特性显示（保留状态；当前仅控制列表筛选）
+    // 被动特性显示
     if (target.matches("select[data-aqb-features-passive]")) {
       this._featuresPassiveMode = target.value || "show";
       this.render(false);
       return;
     }
 
-    // 隐藏特性（暂不提供功能，仅保留状态）
+    // 特性排序（默认 / 按释放时间）
+    if (target.matches("select[data-aqb-features-sort]")) {
+      this._featuresSortMode = target.value || "default";
+      this.render(false);
+      return;
+    }
+
+    // 隐藏特性
     if (target.matches("select[data-aqb-features-hidden]")) {
       this._featuresHiddenMode = target.value || "hide";
       this.render(false);
@@ -504,7 +523,7 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
   }
 
   /* -------------------------------------------- */
-  /* 业务逻辑分发 (Dispatcher) */
+  /* 业务逻辑分发 */
   /* -------------------------------------------- */
 
   _dispatchRoll(action, key) {
@@ -533,6 +552,34 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
   _getBoundActor() {
     return this._getBoundToken()?.actor ?? null;
+  }
+
+  _onControlToken(token, controlled) {
+    if (!controlled) return;
+    if (!token?.id) return;
+
+    const actorId = token?.document?.actorId;
+    const linkedActor = actorId ? game.actors?.get(actorId) : null;
+    if (!linkedActor?.isOwner) return;
+
+    if (token.id === this._tokenId) return;
+    this._tokenId = token.id;
+    storeLastToken(token);
+    void this._setUserCharacterFromToken(token);
+    this.render(false);
+  }
+
+  async _setUserCharacterFromToken(token) {
+    const actorId = token?.document?.actorId;
+    if (!actorId) return;
+    const actor = game.actors?.get(actorId);
+    if (!actor?.isOwner) return;
+    if (game.user?.character?.id === actor.id) return;
+    try {
+      await game.user.update({ character: actor.id });
+    } catch (err) {
+      console.warn("[AQB] 自动切换当前角色失败", err);
+    }
   }
 
   _onUpdateAny(...args) {
@@ -850,7 +897,9 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     Hooks.off("updateItem", this._handleUpdate);
     Hooks.off("createItem", this._handleUpdate);
     Hooks.off("deleteItem", this._handleUpdate);
+    Hooks.off("controlToken", this._handleControlToken);
     if (this._rerenderTimer) window.clearTimeout(this._rerenderTimer);
     ui.controls?.render();
   }
 }
+

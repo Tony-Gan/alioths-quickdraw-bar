@@ -3,7 +3,7 @@ import { getOwnedTokensInScene, getDefaultBindableToken, storeLastToken } from "
 import { getAbilityCheckBonus, getAbilitySaveBonus, getSkillCheckBonus, getInitiativeBonus, getDeathSaveBonus, formatSigned } from "./dnd5e-modifiers.js";
 import { getSpellSlotsSummary, getActorSpellItems, groupSpellsByLevel, groupSpellsByCastingTime } from "./dnd5e-spells.js"; 
 import { getActorOwnedItemDocuments, groupItemsByType, groupItemsByUseTime } from "./dnd5e-items.js"; 
-import { getActorFeatureButtons } from "./dnd5e-features.js";
+import { getActorFeatureButtons, groupFeatureButtonsByUseTime } from "./dnd5e-features.js";
 import { warn } from "../utils/notify.js";
 
 const COMMON_STATUS_DEFS = [
@@ -34,7 +34,7 @@ const MOVEMENT_ACTION_LABELS_ZH = {
   Blink: "传送" 
 }; 
 
-export async function buildDashboardContext(currentTokenId, activeTab, spellsSortMode, spellsUnpreparedMode, spellsHideMode, itemsSortMode, itemsHideMode, featuresHiddenMode) {
+export async function buildDashboardContext(currentTokenId, activeTab, spellsSortMode, spellsUnpreparedMode, spellsHideMode, itemsSortMode, itemsHideMode, featuresHiddenMode, featuresSortMode) {
   const ownedTokens = getOwnedTokensInScene();
   const controlled = canvas?.tokens?.controlled?.[0];
 
@@ -96,6 +96,7 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
     : groupItemsByType(ownedItems, itemsSortMode === "type-consumable" ? "consumable" : "weapon");
 
   const allFeatureButtons = getActorFeatureButtons(actor);
+  const safeFeaturesSortMode = (featuresSortMode === "time") ? "time" : "default";
   const hiddenMode = (featuresHiddenMode === "disable") ? "disable" : "hide";
 
   const featureButtonsProcessed = (allFeatureButtons ?? []);
@@ -208,6 +209,15 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
     { value: "disable", label: "显示", selected: hiddenMode === "disable" }
   ];
 
+  const featuresSortModes = [
+    { value: "default", label: "默认", selected: safeFeaturesSortMode === "default" },
+    { value: "time", label: "按释放时间", selected: safeFeaturesSortMode === "time" }
+  ];
+
+  const featureSections = (safeFeaturesSortMode === "time")
+    ? groupFeatureButtonsByUseTime(featureButtonsHiddenProcessed)
+    : [];
+
   const spellsHideModes = [
     { value: "hide", label: "隐藏", selected: safeSpellsHideMode === "hide" },
     { value: "disable", label: "显示", selected: safeSpellsHideMode === "disable" }
@@ -269,6 +279,9 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
     deathSaveMod,
 
     featuresHiddenModes,
+    featuresSortModes,
+    featureSections,
+    hasFeatureSections: (featureSections?.length ?? 0) > 0,
     featureItems: featureButtonsHiddenProcessed,
     hasFeatureItems: (featureButtonsHiddenProcessed?.length ?? 0) > 0,
 

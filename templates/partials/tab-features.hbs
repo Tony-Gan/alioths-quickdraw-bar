@@ -1,6 +1,15 @@
 <div class="aqb-features">
   <div class="aqb-features-top">
     <div class="aqb-features-controls">
+      <div class="aqb-features-sort">
+        <span>排列方式</span>
+        <select data-aqb-features-sort {{#if buttonsDisabled}}disabled{{/if}}>
+          {{#each featuresSortModes}}
+            <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+          {{/each}}
+        </select>
+      </div>
+
       <div class="aqb-features-hidden">
         <span>隐藏特性</span>
         <select data-aqb-features-hidden {{#if buttonsDisabled}}disabled{{/if}}>
@@ -11,21 +20,33 @@
       </div>
     </div>
   </div>
-
   {{#if buttonsDisabled}}
     <div class="aqb-features-content">
       <p>未绑定角色。请先选择一个你拥有的 Token。</p>
     </div>
   {{else}}
     <div class="aqb-features-content">
-      {{#if hasFeatureItems}}
-        <div class="aqb-feature-list">
-          {{#each featureItems}}
-            {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="item" key=id icon=icon label=name info=usesText disabled=disabled favorited=favorited }}
-          {{/each}}
-        </div>
+      {{#if hasFeatureSections}}
+        {{#each featureSections}}
+          <section class="aqb-section aqb-feature-section">
+            <h1>{{title}}</h1>
+            <div class="aqb-feature-list">
+              {{#each items}}
+                {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="item" key=id icon=icon label=name info=usesText disabled=disabled favorited=favorited }}
+              {{/each}}
+            </div>
+          </section>
+        {{/each}}
       {{else}}
-        <p>该角色没有可用的特性。</p>
+        {{#if hasFeatureItems}}
+          <div class="aqb-feature-list">
+            {{#each featureItems}}
+              {{> "modules/alioths-quickdraw-bar/templates/partials/components/item-button.hbs" roll="item" key=id icon=icon label=name info=usesText disabled=disabled favorited=favorited }}
+            {{/each}}
+          </div>
+        {{else}}
+          <p>该角色没有可用的特性。</p>
+        {{/if}}
       {{/if}}
     </div>
   {{/if}}
