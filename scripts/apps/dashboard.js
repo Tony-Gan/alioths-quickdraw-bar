@@ -1,6 +1,6 @@
 import { DASHBOARD_APP_ID, MODULE_ID, SETTINGS } from "../constants.js";
 import { storeLastToken } from "../services/token-binding.js";
-import { rollAbilityCheck, rollAbilitySave, rollSkillCheck, rollInitiativeCheck, rollDeathSave } from "../services/dnd5e-rolls.js";
+import { rollAbilityCheck, rollAbilitySave, rollSkillCheck, rollInitiativeCheck, rollDeathSave, rollAbilityCheckFast, rollAbilitySaveFast, rollSkillCheckFast, rollInitiativeCheckFast } from "../services/dnd5e-rolls.js";
 import { useDnd5eItem, getItemName } from "../services/dnd5e-item-use.js";
 import { warn, error } from "../utils/notify.js";
 import { buildDashboardContext } from "../services/dashboard-context.js";
@@ -125,7 +125,7 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
   async _onRender(context, options) {
     await super._onRender(context, options);
-    this._closeItemPopover(); 
+    this._closeItemPopover();
     if (this._itemHoverTimer) window.clearTimeout(this._itemHoverTimer);
     this._itemHoverTimer = null;
     this._itemHoverBtn = null;
@@ -256,9 +256,9 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     if (!btn) return;
 
     const roll = btn.dataset?.aqbRoll;
-    const key = btn.dataset?.aqbKey;
-    if (!roll || !key) return;
-
+    const key = btn.dataset?.aqbKey || null;
+    if (!roll) return;
+    if (!key) return;
     if (roll === "status") {
       ev.preventDefault();
       ev.stopImmediatePropagation?.();
@@ -443,8 +443,18 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     // 掷骰/使用
     const rollBtn = target.closest("button[data-aqb-roll]");
     if (rollBtn) {
-      ev.preventDefault(); 
-      this._dispatchRoll(rollBtn.dataset.aqbRoll, rollBtn.dataset.aqbKey);
+      ev.preventDefault();
+      const action = rollBtn.dataset?.aqbRoll;
+      const key = rollBtn.dataset?.aqbKey;
+      const isSplit = Boolean(rollBtn.classList?.contains("aqb-split2-btn"));
+      const excluded = ["death-save", "short-rest", "long-rest"].includes(String(action ?? ""));
+      const hasQuickMod = Boolean(ev.shiftKey || ev.altKey || ev.ctrlKey);
+      const fastCapable = ["initiative", "ability-check", "ability-save", "skill"].includes(String(action ?? ""));
+      if (isSplit && !excluded && hasQuickMod && fastCapable) {
+        const rollMode = (ev.altKey && !ev.ctrlKey) ? "advantage" : ((ev.ctrlKey && !ev.altKey) ? "disadvantage" : "normal");
+        return this._dispatchRollFast(action, key, rollMode);
+      }
+      return this._dispatchRoll(action, key);
     }
   }
 
@@ -542,6 +552,16 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       case "ability-save": return key ? this._handleAbilitySave(key) : null;
       case "skill": return key ? this._handleSkillCheck(key) : null;
       default: console.warn(`[AQB] 未知的操作类型: ${action}`);
+    }
+  }
+
+  _dispatchRollFast(action, key, rollMode = "normal") {
+    switch (action) {
+      case "initiative": return this._handleInitiativeFast(rollMode);
+      case "ability-check": return key ? this._handleAbilityCheckFast(key, rollMode) : null;
+      case "ability-save": return key ? this._handleAbilitySaveFast(key, rollMode) : null;
+      case "skill": return key ? this._handleSkillCheckFast(key, rollMode) : null;
+      default: return this._dispatchRoll(action, key);
     }
   }
 
@@ -743,6 +763,23 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       return rollInitiativeCheck(actor);
     });
   }
+
+  async _handleInitiativeFast(rollMode) {
+    await this._safeRun("先攻检定", async (actor) => {
+      const combat = game.combat ?? null;
+      if (!combat) return warn("AQB：当前没有进行中的战斗，无法投掷先攻。请先创建/开始战斗并将角色加入战斗。");
+
+      const token = this._getBoundToken();
+      const tokenId = token?.id ?? null;
+      const combatant = token?.combatant
+        ?? (tokenId ? combat.combatants?.find((c) => c?.tokenId === tokenId) : null)
+        ?? combat.combatants?.find((c) => c?.actorId === actor.id);
+      if (!combatant) return warn("AQB：该角色尚未加入当前战斗，无法投掷先攻。请先将其加入战斗。");
+
+      return rollInitiativeCheckFast(actor, rollMode);
+    });
+  }
+
   async _handleDeathSave() {
     await this._safeRun("死亡豁免", (actor) => {
       const hp = Number(actor?.system?.attributes?.hp?.value ?? NaN);
@@ -808,6 +845,9 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
   async _handleAbilityCheck(id) { await this._safeRun("属性检定", (actor) => rollAbilityCheck(actor, id)); }
   async _handleAbilitySave(id) { await this._safeRun("属性豁免", (actor) => rollAbilitySave(actor, id)); }
   async _handleSkillCheck(id) { await this._safeRun("技能检定", (actor) => rollSkillCheck(actor, id)); }
+  async _handleAbilityCheckFast(id, rollMode) { await this._safeRun("属性检定", (actor) => rollAbilityCheckFast(actor, id, rollMode)); }
+  async _handleAbilitySaveFast(id, rollMode) { await this._safeRun("属性豁免", (actor) => rollAbilitySaveFast(actor, id, rollMode)); }
+  async _handleSkillCheckFast(id, rollMode) { await this._safeRun("技能检定", (actor) => rollSkillCheckFast(actor, id, rollMode)); }
   async _handleStatusToggle(statusId) {
     await this._safeRun("切换状态", async (actor) => {
       await actor.toggleStatusEffect(statusId);

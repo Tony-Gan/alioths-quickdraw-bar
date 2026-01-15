@@ -3,26 +3,6 @@
     <p class="aqb-spells-slots">{{spellSlotsSummary}}</p>
   </div>
 
-      <div class="aqb-spells-hide">
-        <span>隐藏法术</span>
-        <select data-aqb-spells-hide {{#if buttonsDisabled}}disabled{{/if}}>
-          {{#each spellsHideModes}}
-            <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
-          {{/each}}
-        </select>
-      </div>
-
-      <div class="aqb-spells-sort">
-        <span>排列方式</span>
-        <select data-aqb-spells-sort {{#if buttonsDisabled}}disabled{{/if}}>
-          {{#each spellsSortModes}}
-            <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
-          {{/each}}
-        </select>
-      </div>
-    </div>
-  </div>
-
   {{#if buttonsDisabled}}
 
     <div class="aqb-spells-content">
