@@ -8,6 +8,88 @@
         {{/each}}
       </select>
     </div>
+
+    {{#if isTabItems}}
+      <div class="aqb-tab-controls">
+        <div class="aqb-items-controls">
+          <div class="aqb-items-sort">
+            <span>排列方式</span>
+            <select data-aqb-items-sort {{#if buttonsDisabled}}disabled{{/if}}>
+              {{#each itemsSortModes}}
+                <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+              {{/each}}
+            </select>
+          </div>
+
+          <div class="aqb-items-hide">
+            <span>隐藏物品</span>
+            <select data-aqb-items-hide {{#if buttonsDisabled}}disabled{{/if}}>
+              {{#each itemsHideModes}}
+                <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+              {{/each}}
+            </select>
+          </div>
+        </div>
+      </div>
+    {{/if}}
+
+    {{#if isTabFeatures}}
+      <div class="aqb-tab-controls">
+        <div class="aqb-features-controls">
+          <div class="aqb-features-sort">
+            <span>排列方式</span>
+            <select data-aqb-features-sort {{#if buttonsDisabled}}disabled{{/if}}>
+              {{#each featuresSortModes}}
+                <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+              {{/each}}
+            </select>
+          </div>
+
+          <div class="aqb-features-hidden">
+            <span>隐藏特性</span>
+            <select data-aqb-features-hidden {{#if buttonsDisabled}}disabled{{/if}}>
+              {{#each featuresHiddenModes}}
+                <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+              {{/each}}
+            </select>
+          </div>
+        </div>
+      </div>
+    {{/if}}
+
+    {{#if isTabSpells}}
+      <div class="aqb-tab-controls">
+        <div class="aqb-spells-controls">
+          <div class="aqb-spells-unprepared">
+            <span>未准备法术</span>
+            <select data-aqb-spells-unprepared {{#if buttonsDisabled}}disabled{{/if}}>
+              {{#each spellsUnpreparedModes}}
+                <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+              {{/each}}
+            </select>
+          </div>
+
+          <div class="aqb-spells-hide">
+            <span>隐藏法术</span>
+            <select data-aqb-spells-hide {{#if buttonsDisabled}}disabled{{/if}}>
+              {{#each spellsHideModes}}
+                <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+              {{/each}}
+            </select>
+          </div>
+
+          <div class="aqb-spells-sort">
+            <span>排列方式</span>
+            <select data-aqb-spells-sort {{#if buttonsDisabled}}disabled{{/if}}>
+              {{#each spellsSortModes}}
+                <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
+              {{/each}}
+            </select>
+          </div>
+        </div>
+      </div>
+    {{/if}}
+
     <div class="aqb-spacer"></div>
 
     <div class="aqb-tabs" aria-label="AQB Tabs">
@@ -15,7 +97,6 @@
         <button type="button" class="aqb-tab {{#if active}}active{{/if}}" data-aqb-tab="{{key}}">{{label}}</button>
       {{/each}}
     </div>
-
   </div>
 
   <div class="aqb-body">
@@ -38,7 +119,7 @@
     {{#if isTabStateMove}}
       {{> "modules/alioths-quickdraw-bar/templates/partials/tab-state-movement.hbs" }}
     {{/if}}
-  
+
     {{#if isTabCustom}}
       {{> "modules/alioths-quickdraw-bar/templates/partials/tab-custom.hbs" }}
     {{/if}}

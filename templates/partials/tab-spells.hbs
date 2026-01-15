@@ -1,16 +1,7 @@
 <div class="aqb-spells">
   <div class="aqb-spells-top">
     <p class="aqb-spells-slots">{{spellSlotsSummary}}</p>
-
-    <div class="aqb-spells-controls">
-      <div class="aqb-spells-unprepared">
-        <span>未准备法术</span>
-        <select data-aqb-spells-unprepared {{#if buttonsDisabled}}disabled{{/if}}>
-          {{#each spellsUnpreparedModes}}
-            <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
-          {{/each}}
-        </select>
-      </div>
+  </div>
 
       <div class="aqb-spells-hide">
         <span>隐藏法术</span>

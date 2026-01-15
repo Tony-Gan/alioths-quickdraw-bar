@@ -15,8 +15,31 @@ function formatFeatureUses(item) {
   return `${v}`;
 }
 
+function getFirstItemActivity(item) {
+  const activities = item?.activities ?? item?.system?.activities;
+  if (!activities) return null;
+  if (Array.isArray(activities)) return activities[0] ?? null;
+  if (Array.isArray(activities?.contents)) return activities.contents[0] ?? null;
+  if (typeof activities?.values === "function") {
+    const it = activities.values();
+    return it?.next?.().value ?? null;
+  }
+  if (typeof activities === "object") {
+    const list = Object.values(activities).filter(Boolean);
+    if (!list.length) return null;
+    const getSort = (a) => a?.sort ?? a?.order ?? a?.system?.sort ?? a?.system?.order;
+    if (list.every((a) => Number.isFinite(Number(getSort(a))))) {
+      list.sort((a, b) => Number(getSort(a)) - Number(getSort(b)));
+    }
+    return list[0] ?? null;
+  }
+  return null;
+}
+
 function normalizeActivationType(item) {
-  const t = item?.system?.activation?.type;
+  const firstActivity = getFirstItemActivity(item);
+  if (!firstActivity) return "other";
+  const t = firstActivity?.activation?.type ?? firstActivity?.system?.activation?.type;
   if (t === "action") return "action";
   if (t === "bonus") return "bonus";
   if (t === "reaction") return "reaction";

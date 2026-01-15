@@ -16,7 +16,8 @@ export function getActorOwnedItemDocuments(actor) {
   if (!actor) return [];
   return (actor.items?.contents ?? actor.items ?? [])
     .filter((i) => i && i.type !== "spell" && i.type !== "feat")
-    .filter((i) => i.type !== "class" && i.type !== "subclass") ?? [];
+    .filter((i) => i.type !== "class" && i.type !== "subclass")
+    .filter((i) => i.type !== "background" && i.type !== "race") ?? [];
 }
 
 function formatItemUses(item) {

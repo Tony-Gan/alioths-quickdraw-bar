@@ -1,26 +1,4 @@
 <div class="aqb-items">
-  <div class="aqb-items-top">
-    <div class="aqb-items-controls">
-      <div class="aqb-items-sort">
-        <span>排列方式</span>
-        <select data-aqb-items-sort {{#if buttonsDisabled}}disabled{{/if}}>
-          {{#each itemsSortModes}}
-            <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
-          {{/each}}
-        </select>
-      </div>
-
-      <div class="aqb-items-hide">
-        <span>隐藏物品</span>
-        <select data-aqb-items-hide {{#if buttonsDisabled}}disabled{{/if}}>
-          {{#each itemsHideModes}}
-            <option value="{{value}}" {{#if selected}}selected{{/if}}>{{label}}</option>
-          {{/each}}
-        </select>
-      </div>
-    </div>
-  </div>
-
   {{#if buttonsDisabled}}
     <div class="aqb-items-content">
       <p>未绑定角色。请先选择一个你拥有的 Token。</p>
