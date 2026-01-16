@@ -72,6 +72,24 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
     return withPos.map((x) => x.it);
   };
   
+  const getProfCssClass = (level) => {
+    const n = Number(level ?? 0);
+    if (n >= 2) return "aqb-prof-expertise";
+    if (n >= 1) return "aqb-prof";
+    return "";
+  };
+
+  const getSaveProfLevel = (actor, abilityId) => {
+    const v = actor?.system?.abilities?.[abilityId]?.proficient;
+    return Number(v ?? 0);
+  };
+
+  const getSkillProfLevel = (actor, skillId) => {
+    const sk = actor?.system?.skills?.[skillId];
+    const v = sk?.proficient ?? sk?.value ?? sk?.rank ?? sk?.prof;
+    return Number(v ?? 0);
+  };
+
   const abilityChecks = ABILITIES.map((a) => ({
     id: a.id,
     label: a.label,
@@ -83,7 +101,8 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
     id: a.id,
     label: a.label,
     icon: genericIcon,
-    mod: formatSigned(getAbilitySaveBonus(actor, a.id))
+    mod: formatSigned(getAbilitySaveBonus(actor, a.id)),
+    cssClass: getProfCssClass(getSaveProfLevel(actor, a.id))
   }));
 
   const allSkillGroups = SKILL_GROUPS.map((g) => ({
@@ -91,7 +110,8 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
     skills: g.skills.map((s) => ({
       ...s,
       icon: genericIcon,
-      mod: formatSigned(getSkillCheckBonus(actor, s.id))
+      mod: formatSigned(getSkillCheckBonus(actor, s.id)),
+      cssClass: getProfCssClass(getSkillProfLevel(actor, s.id))
     }))
   }));
 
@@ -133,6 +153,12 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
     return Boolean(flag);
   };
 
+  const isFlaggedForceShown = (itemId) => {
+    const it = actor?.items?.get?.(itemId);
+    const flag = it?.getFlag?.(MODULE_ID, "forceShow") ?? it?.flags?.[MODULE_ID]?.forceShow;
+    return Boolean(flag);
+  };
+
   const isFlaggedFavorited = (itemId) => {
     const it = actor?.items?.get?.(itemId);
     const flag = it?.getFlag?.(MODULE_ID, "favorited") ?? it?.flags?.[MODULE_ID]?.favorited;
@@ -141,12 +167,15 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
 
   const featureButtonsHiddenProcessed = (featureButtonsProcessed ?? [])
     .map((f) => {
-      const autoHidden = FEATURE_AUTO_HIDE_NAME_MAP.has(f.name);
-      const isHidden = isFlaggedHidden(f.id) || autoHidden;
-      if (isHidden && hiddenMode === "hide") return null;
+      const autoHiddenByName = FEATURE_AUTO_HIDE_NAME_MAP.has(f.name);
+      const autoHiddenByNoActivity = Boolean(f.autoHidden);
+      const forceShown = isFlaggedForceShown(f.id);
+      const autoHidden = autoHiddenByName || autoHiddenByNoActivity;
+      const isHidden = isFlaggedHidden(f.id) || (autoHidden && !forceShown);
       return {
         ...f,
         favorited: isFlaggedFavorited(f.id),
+        hidden: Boolean(isHidden && hiddenMode === "hide"),
         disabled: Boolean(f.disabled) || (isHidden && hiddenMode === "disable")
       };
     })
@@ -180,11 +209,13 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
       const sortKey = `items:${section.key ?? section.title ?? ""}`;
       const itemsRaw = (section.items ?? [])
         .map((it) => {
-          const isHidden = isFlaggedHidden(it.id);
-          if (isHidden && safeItemsHideMode === "hide") return null;
+          const forceShown = isFlaggedForceShown(it.id);
+          const autoHidden = Boolean(it.autoHidden);
+          const isHidden = isFlaggedHidden(it.id) || (autoHidden && !forceShown);
           return {
             ...it,
             favorited: isFlaggedFavorited(it.id),
+            hidden: Boolean(isHidden && safeItemsHideMode === "hide"),
             disabled: Boolean(it.disabled) || (isHidden && safeItemsHideMode === "disable")
           };
         })
@@ -192,7 +223,11 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
       const items = applyManualOrder(itemsRaw, getManualOrder(sortKey));
       return { ...section, sortKey, items };
     })
-    .filter((section) => (section.items?.length ?? 0) > 0);
+    .filter((section) => { 
+      if ((section.items?.length ?? 0) <= 0) return false;
+      if (safeItemsHideMode !== "hide") return true;
+      return section.items.some((it) => !it?.hidden);
+    });
 
   const favoriteItemsSortKey = "favorites:items";
   const favoriteFeaturesSortKey = "favorites:features";
@@ -259,7 +294,11 @@ export async function buildDashboardContext(currentTokenId, activeTab, spellsSor
       const items = applyManualOrder(section.items ?? [], getManualOrder(sortKey));
       return { ...section, sortKey, items };
     })
-    .filter((section) => (section.items?.length ?? 0) > 0);
+    .filter((section) => {
+      if ((section.items?.length ?? 0) <= 0) return false;
+      if (safeItemsHideMode !== "hide") return true;
+      return section.items.some((it) => !it?.hidden);
+    });
 
   const spellsHideModes = [
     { value: "hide", label: "隐藏", selected: safeSpellsHideMode === "hide" },

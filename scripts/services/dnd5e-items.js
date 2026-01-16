@@ -35,13 +35,14 @@ function mapItemButton(item) {
     id: item.id,
     name: fullName,
     icon: item.img,
-    usesText: formatItemUses(item)
+    usesText: formatItemUses(item),
+    autoHidden: !hasAnyItemActivity(item)
   };
 }
 
 export function groupItemsByType(items, priority = "weapon") {
   const buckets = new Map();
-  for (const it of items) {
+  for (const it of (items ?? [])) {
     const type = it?.type ?? "other";
     if (!buckets.has(type)) buckets.set(type, []);
     buckets.get(type).push(it);
@@ -91,6 +92,10 @@ function getFirstItemActivity(item) {
   return null;
 }
 
+function hasAnyItemActivity(item) {
+  return Boolean(getFirstItemActivity(item));
+}
+
 function normalizeActivationType(item) {
   const firstActivity = getFirstItemActivity(item);
   if (!firstActivity) return "other";
@@ -111,7 +116,7 @@ export function groupItemsByUseTime(items) {
   };
 
   const buckets = new Map(order.map((k) => [k, []]));
-  for (const it of items) {
+  for (const it of (items ?? [])) {
     const key = normalizeActivationType(it);
     buckets.get(key)?.push(it);
   }

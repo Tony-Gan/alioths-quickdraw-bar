@@ -1,5 +1,5 @@
-<div class="aqb-sort-item" data-aqb-sort-key="{{key}}" data-aqb-sort-section="{{sortSection}}" data-aqb-roll="{{roll}}" data-aqb-key="{{key}}" {{#if title}}title="{{title}}"{{/if}}>{{!-- // [MODIFIED] --}}
-  <button type="button" class="aqb-btn aqb-item-btn{{#if favorited}} is-favorited{{/if}}" data-aqb-roll="{{roll}}" data-aqb-key="{{key}}" {{#if title}}title="{{title}}"{{/if}} {{#if disabled}}disabled{{/if}}>{{!-- // [MODIFIED] --}}
+<div class="aqb-sort-item" data-aqb-sort-key="{{key}}" data-aqb-sort-section="{{sortSection}}" data-aqb-roll="{{roll}}" data-aqb-key="{{key}}" {{#if title}}title="{{title}}"{{/if}} {{#if hidden}}hidden{{/if}}>
+  <button type="button" class="aqb-btn aqb-item-btn{{#if favorited}} is-favorited{{/if}}" data-aqb-roll="{{roll}}" data-aqb-key="{{key}}" {{#if title}}title="{{title}}"{{/if}} {{#if disabled}}disabled{{/if}}>
     <span class="aqb-item-icon-wrap">
       {{#if icon}}
         <img class="aqb-item-icon" src="{{icon}}" alt="" />

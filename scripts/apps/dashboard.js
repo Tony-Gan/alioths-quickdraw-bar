@@ -1,4 +1,4 @@
-import { DASHBOARD_APP_ID, MODULE_ID, SETTINGS } from "../constants.js";
+import { DASHBOARD_APP_ID, MODULE_ID, SETTINGS, FEATURE_AUTO_HIDE_NAME_MAP } from "../constants.js";
 import { storeLastToken } from "../services/token-binding.js";
 import { rollAbilityCheck, rollAbilitySave, rollSkillCheck, rollInitiativeCheck, rollDeathSave, rollAbilityCheckFast, rollAbilitySaveFast, rollSkillCheckFast, rollInitiativeCheckFast } from "../services/dnd5e-rolls.js";
 import { useDnd5eItem, getItemName } from "../services/dnd5e-item-use.js";
@@ -669,8 +669,38 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     const actor = this._getBoundActor();
     const item = actor?.items?.get?.(key) ?? null;
-    const isHidden = Boolean(item?.getFlag?.(MODULE_ID, "hidden") ?? item?.flags?.[MODULE_ID]?.hidden);
+
+    const getFirstActivity = (it) => {
+      const activities = it?.activities ?? it?.system?.activities;
+      if (!activities) return null;
+      if (Array.isArray(activities)) return activities[0] ?? null;
+      if (Array.isArray(activities?.contents)) return activities.contents[0] ?? null;
+      if (typeof activities?.values === "function") {
+        const iter = activities.values();
+        return iter?.next?.().value ?? null;
+      }
+      if (typeof activities === "object") {
+        const list = Object.values(activities).filter(Boolean);
+        if (!list.length) return null;
+        const getSort = (a) => a?.sort ?? a?.order ?? a?.system?.sort ?? a?.system?.order;
+        if (list.every((a) => Number.isFinite(Number(getSort(a))))) {
+          list.sort((a, b) => Number(getSort(a)) - Number(getSort(b)));
+        }
+        return list[0] ?? null;
+      }
+      return null;
+    };
+
+    const hiddenFlag = Boolean(item?.getFlag?.(MODULE_ID, "hidden") ?? item?.flags?.[MODULE_ID]?.hidden);
+    const forceShown = Boolean(item?.getFlag?.(MODULE_ID, "forceShow") ?? item?.flags?.[MODULE_ID]?.forceShow);
+
+    const autoHiddenByNoActivity = (roll !== "spell") && !getFirstActivity(item);
+    const autoHiddenByName = (roll !== "spell") && (this._activeTab === "features") && FEATURE_AUTO_HIDE_NAME_MAP.has(getItemName(item) ?? item?.name ?? "");
+    const autoHidden = autoHiddenByNoActivity || autoHiddenByName;
+
+    const isHidden = hiddenFlag || (autoHidden && !forceShown);
     const isFavorited = Boolean(item?.getFlag?.(MODULE_ID, "favorited") ?? item?.flags?.[MODULE_ID]?.favorited);
+
     const hideMode = (roll === "spell") ? this._spellsHideMode : (this._activeTab === "features" ? this._featuresHiddenMode : this._itemsHideMode);
     const canUnhide = hideMode === "disable" && isHidden;
     const hideAction = canUnhide ? "show" : "hide";
@@ -1032,6 +1062,7 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     if (!item) return warn("AQB：未找到该物品。");
     const isFavorited = Boolean(item?.getFlag?.(MODULE_ID, "favorited") ?? item?.flags?.[MODULE_ID]?.favorited);
     if (isFavorited) return warn("AQB：已收藏的按钮无法隐藏，请先取消收藏。");
+    await item.unsetFlag(MODULE_ID, "forceShow");
     await item.setFlag(MODULE_ID, "hidden", true);
   }
 
@@ -1041,6 +1072,7 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const item = actor.items.get(itemId);
     if (!item) return warn("AQB：未找到该物品。");
     await item.unsetFlag(MODULE_ID, "hidden");
+    await item.setFlag(MODULE_ID, "forceShow", true);
   }
 
   async _handleFavoriteItem(itemId) {
@@ -1260,6 +1292,7 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
   _onClose(options) {
     super._onClose(options);
     this._closeItemPopover();
+    Hooks.callAll("closeAqbDashboardApp");
     Hooks.off("updateActor", this._handleUpdate);
     Hooks.off("updateToken", this._handleUpdate);
     Hooks.off("createActiveEffect", this._handleUpdate);

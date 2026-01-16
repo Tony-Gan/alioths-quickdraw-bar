@@ -36,6 +36,10 @@ function getFirstItemActivity(item) {
   return null;
 }
 
+function hasAnyItemActivity(item) {
+  return Boolean(getFirstItemActivity(item));
+}
+
 function normalizeActivationType(item) {
   const firstActivity = getFirstItemActivity(item);
   if (!firstActivity) return "other";
@@ -53,7 +57,8 @@ function mapFeatureButton(item) {
     name: displayName,
     icon: item.img,
     usesText: formatFeatureUses(item),
-    activationType: normalizeActivationType(item)
+    activationType: normalizeActivationType(item),
+    autoHidden: !hasAnyItemActivity(item)
   };
 }
 

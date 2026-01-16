@@ -80,5 +80,8 @@ export const SKILL_GROUPS = [
 // 特性按钮自动隐藏名单（在此填写需要隐藏的特性名称）
 // 说明：key 为按钮显示名称（会受重命名影响），value 任意真值即可。
 export const FEATURE_AUTO_HIDE_NAME_MAP = new Map([
-  ["施法", true],
+  ["施法", true],["背包", true],["水袋", true],["铺盖", true],["高档服装", true],["镶钉皮甲", true],["旅行服装", true],
+  ["板甲", true],["铲子", true],["盾牌", true],["撬棍", true],["书籍", true],["香水", true],["羊皮纸", true],["长杆", true],
+  ["箭矢", true],["镜子", true],["弩矢", true],["胸甲", true],["水晶", true],["权杖", true],["板条甲", true],["口粮", true],
+  ["望远镜", true]
 ]);

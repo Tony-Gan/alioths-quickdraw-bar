@@ -1,8 +1,8 @@
 {
   "id": "alioths-quickdraw-bar",
   "title": "Alioth's Quickdraw Bar",
-  "description": "Alioth's Quickdraw Bar 快捷工具栏",
-  "version": "1.0.0",
+  "description": "一个路过费伦大陆的快捷工具栏，被领主联盟征用，好惨",
+  "version": "1.0.1",
   "license": "GPL-3.0",
   "authors": [
     {

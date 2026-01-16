@@ -9,7 +9,7 @@ export function registerSceneControls() {
     if (!tokenControls) return;
 
     const app = getDashboardInstance();
-    const isActive = Boolean(app?.rendered);
+    const isActive = Boolean(app?.element?.isConnected);
 
     tokenControls.tools[TOOL_ID] = {
       name: TOOL_ID,
@@ -35,6 +35,28 @@ export function registerSceneControls() {
   });
 
   Hooks.on("closeAqbDashboardApp", () => {
+    try {
+      const controls = ui.controls;
+      const setToolInactive = (tool) => {
+        if (tool && typeof tool === "object") tool.active = false;
+      };
+
+      const tokenCtl = controls?.controls?.find?.((c) => c?.name === "tokens");
+      const tools = tokenCtl?.tools;
+      if (Array.isArray(tools)) {
+        setToolInactive(tools.find((t) => t?.name === TOOL_ID));
+      } else if (tools && typeof tools === "object") {
+        setToolInactive(tools[TOOL_ID]);
+      }
+
+      const curTools = controls?.control?.tools;
+      if (Array.isArray(curTools)) {
+        setToolInactive(curTools.find((t) => t?.name === TOOL_ID));
+      } else if (curTools && typeof curTools === "object") {
+        setToolInactive(curTools[TOOL_ID]);
+      }
+    } catch (_) { /* ignore */ }
+
     ui.controls?.render();
   });
 }
