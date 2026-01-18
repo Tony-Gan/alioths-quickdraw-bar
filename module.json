@@ -2,7 +2,7 @@
   "id": "alioths-quickdraw-bar",
   "title": "Alioth's Quickdraw Bar",
   "description": "一个路过费伦大陆的快捷工具栏，被领主联盟征用，好惨",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "license": "GPL-3.0",
   "authors": [
     {
@@ -35,18 +35,6 @@
   ],
   "styles": [
     "styles/aqb.css"
-  ],
-  "templates": [
-    "templates/dashboard.hbs",
-    "templates/partials/tab-items.hbs",
-    "templates/partials/tab-features.hbs",
-    "templates/partials/tab-spells.hbs",
-    "templates/partials/tab-checks-saves.hbs",
-    "templates/partials/tab-state-movement.hbs",
-    "templates/partials/tab-custom.hbs",
-    "templates/partials/components/split-button.hbs",
-    "templates/partials/components/item-button.hbs",
-    "templates/partials/components/icon-toggle-button.hbs"
   ],
   "url": "https://github.com/Tony-Gan/alioths-quickdraw-bar",
   "manifest": "https://github.com/Tony-Gan/alioths-quickdraw-bar/releases/latest/download/module.json",

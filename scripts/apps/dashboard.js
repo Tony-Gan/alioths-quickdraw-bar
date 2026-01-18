@@ -51,6 +51,8 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     this._sortState = null;
     this._suppressNextClick = false;
+
+    this._controlTokenDebounce = null;
     
     this._spellsUnpreparedMode = game.settings.get(MODULE_ID, SETTINGS.SPELLS_UNPREPARED_MODE) || "disable";
     this._spellsHideMode = "hide";
@@ -828,7 +830,6 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
       const token = this._getBoundToken();
       if (token) {
         storeLastToken(token);
-        void this._setUserCharacterFromToken(token);
       }
       this.render(false);
       return;
@@ -939,28 +940,26 @@ export class AqbDashboardApp extends HandlebarsApplicationMixin(ApplicationV2) {
     if (!controlled) return;
     if (!token?.id) return;
 
-    const actorId = token?.document?.actorId;
-    const linkedActor = actorId ? game.actors?.get(actorId) : null;
-    if (!linkedActor?.isOwner) return;
+    if (this._controlTokenDebounce) window.clearTimeout(this._controlTokenDebounce);
+    this._controlTokenDebounce = window.setTimeout(() => {
+      this._controlTokenDebounce = null;
 
-    if (token.id === this._tokenId) return;
-    this._tokenId = token.id;
-    storeLastToken(token);
-    void this._setUserCharacterFromToken(token);
-    this.render(false);
-  }
+      const controlledTokens = canvas?.tokens?.controlled ?? [];
+      if (controlledTokens.length !== 1) return;
 
-  async _setUserCharacterFromToken(token) {
-    const actorId = token?.document?.actorId;
-    if (!actorId) return;
-    const actor = game.actors?.get(actorId);
-    if (!actor?.isOwner) return;
-    if (game.user?.character?.id === actor.id) return;
-    try {
-      await game.user.update({ character: actor.id });
-    } catch (err) {
-      console.warn("[AQB] 自动切换当前角色失败", err);
-    }
+      const onlyToken = controlledTokens[0];
+      if (!onlyToken?.id) return;
+
+      const actorId = onlyToken?.document?.actorId;
+      const linkedActor = actorId ? game.actors?.get(actorId) : null;
+      if (!linkedActor?.isOwner) return;
+
+      if (onlyToken.id === this._tokenId) return;
+
+      this._tokenId = onlyToken.id;
+      storeLastToken(onlyToken);
+      this.render(false);
+    }, 0);
   }
 
   _onUpdateAny(...args) {
