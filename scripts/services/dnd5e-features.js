@@ -43,10 +43,11 @@ function hasAnyItemActivity(item) {
 function normalizeActivationType(item) {
   const firstActivity = getFirstItemActivity(item);
   if (!firstActivity) return "other";
-  const t = firstActivity?.activation?.type ?? firstActivity?.system?.activation?.type;
+  const t = (firstActivity?.activation?.type ?? firstActivity?.system?.activation?.type ?? "").toString().toLowerCase();
   if (t === "action") return "action";
   if (t === "bonus") return "bonus";
   if (t === "reaction") return "reaction";
+  if (t.includes("legendary")) return "legendary";
   return "other";
 }
 
@@ -63,11 +64,12 @@ function mapFeatureButton(item) {
 }
 
 export function groupFeatureButtonsByUseTime(featureButtons) {
-  const order = ["action", "bonus", "reaction", "other"];
+  const order = ["action", "bonus", "reaction", "legendary", "other"];
   const titles = {
     action: "动作",
     bonus: "附赠动作",
     reaction: "反应",
+    legendary: "传奇动作",
     other: "其他"
   };
 

@@ -5,7 +5,8 @@ export const DASHBOARD_APP_ID = "aqb-dashboard";
 export const SETTINGS = {
   LAST_TOKEN_UUID: "lastTokenUuid",
   SPELLS_SORT_MODE: "spellsSortMode",
-  SPELLS_UNPREPARED_MODE: "spellsUnpreparedMode"
+  SPELLS_UNPREPARED_MODE: "spellsUnpreparedMode",
+  CONFIG_MENU: "configMenu"
 };
 
 export const TABS = [

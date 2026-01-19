@@ -1,6 +1,16 @@
 import { MODULE_ID, SETTINGS } from "./constants.js";
+import { AqbConfigApp } from "./apps/config.js";
 
 export function registerSettings() {
+  game.settings.registerMenu(MODULE_ID, SETTINGS.CONFIG_MENU, {
+    name: "AQB：配置",
+    label: "打开",
+    hint: "打开 AQB 的配置面板。",
+    icon: "fas fa-cog",
+    type: AqbConfigApp,
+    restricted: false
+  });
+
   game.settings.register(MODULE_ID, SETTINGS.LAST_TOKEN_UUID, {
     name: "AQB：上次绑定的 Token",
     hint: "AQB 会记住你上一次在面板中绑定的 Token，用于下次打开时自动选择。",
